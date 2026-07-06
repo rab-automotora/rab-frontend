@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle | RAB Automotora</title>
+  <link rel="stylesheet" href="../assets/css/rab.css">
+  <link rel="icon" href="../assets/images/logo.png">
+  <style>
+    .detail-wrap { max-width: 1140px; margin: 0 auto; padding: 2rem 1.5rem 4rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; }
+    @media (max-width: 768px) { .detail-wrap { grid-template-columns: 1fr; } }
+    .gallery-main { position: relative; aspect-ratio: 16/10; border-radius: 16px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); }
+    .gallery-main img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; color: #fff; transition: background .2s; border: none; cursor: pointer; }
+    .gallery-nav:hover { background: rgba(0,0,0,.8); }
+    .gallery-nav.prev { left: 10px; }
+    .gallery-nav.next { right: 10px; }
+    .gallery-counter { position: absolute; bottom: 10px; right: 12px; background: rgba(0,0,0,.6); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 12px; }
+    .gallery-thumbs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-top: 10px; }
+    .gallery-thumb { flex-shrink: 0; width: 64px; height: 48px; border-radius: 8px; overflow: hidden; border: 2px solid transparent; cursor: pointer; opacity: .5; transition: all .2s; }
+    .gallery-thumb.active { border-color: var(--blue); opacity: 1; }
+    .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .detail-info { display: flex; flex-direction: column; gap: 1.25rem; }
+    .detail-price { background: rgba(13,27,75,.6); border: 1px solid rgba(21,101,192,.3); border-radius: 12px; padding: 1rem 1.25rem; }
+    .detail-price-label { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.4); margin-bottom: 4px; }
+    .detail-price-val { font-family: var(--font-title); font-weight: 900; font-size: 2.25rem; color: var(--blue); }
+    .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .spec-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: .9rem 1rem; display: flex; align-items: flex-start; gap: .75rem; }
+    .spec-card svg { color: var(--blue); flex-shrink: 0; margin-top: 2px; }
+    .spec-label { font-size: 10px; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: .1em; }
+    .spec-value { font-size: 13px; font-weight: 600; color: var(--white); margin-top: 2px; }
+  </style>
+</head>
+<body>
+<div id="navbar-container"></div>
+<div id="toast"></div>
+
+<main style="padding-top:64px;min-height:100vh;background:var(--bg-dark)">
+  <div style="max-width:1140px;margin:0 auto;padding:2rem 1.5rem .5rem">
+    <button onclick="history.back()" style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.4);font-size:13px;transition:color .2s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.4)'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Volver al inventario
+    </button>
+  </div>
+
+  <div id="detail-content" style="display:none">
+    <div class="detail-wrap">
+      <!-- Gallery -->
+      <div>
+        <div class="gallery-main" id="gallery-main">
+          <div class="spinner" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+        </div>
+        <div class="gallery-thumbs" id="gallery-thumbs"></div>
+      </div>
+      <!-- Info -->
+      <div class="detail-info">
+        <div>
+          <div id="detail-badges" style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap"></div>
+          <h1 id="detail-title" style="font-family:var(--font-title);font-weight:900;font-size:2rem;color:var(--white);line-height:1.1"></h1>
+          <p id="detail-year"   style="color:var(--text-muted);font-size:14px;margin-top:.25rem"></p>
+        </div>
+        <div class="detail-price">
+          <div class="detail-price-label">Precio</div>
+          <div class="detail-price-val" id="detail-price"></div>
+        </div>
+        <div class="specs-grid" id="specs-grid"></div>
+        <div id="detail-desc" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.25rem">
+          <p style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-bottom:.5rem">Descripción</p>
+          <p id="detail-desc-text" style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.7"></p>
+        </div>
+        <div id="detail-cta"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="detail-loading" style="padding:6rem 0;text-align:center"><div class="spinner"></div></div>
+  <div id="detail-error" style="display:none;padding:6rem 1.5rem;text-align:center">
+    <p style="font-family:var(--font-title);font-weight:700;font-size:1.25rem;color:var(--white);margin-bottom:1rem">Vehículo no encontrado</p>
+    <a href="./index.html" style="color:var(--blue);font-size:14px">← Volver al inventario</a>
+  </div>
+</main>
+
+<div id="footer-container"></div>
+
+<script src="../assets/js/config.js"></script>
+<script>
+  document.getElementById('navbar-container').innerHTML = RAB.renderNavbar('Inventario')
+  document.getElementById('footer-container').innerHTML = RAB.renderFooter()
+  RAB.initNavbarScroll()
+
+  const id = new URLSearchParams(location.search).get('id')
+  let images = [], activeImg = 0
+
+  function showImg(i) {
+    activeImg = i
+    const main = document.getElementById('gallery-main')
+    const img  = images[i]
+    main.innerHTML = `
+      <img src="${img.public_url}" alt="">
+      ${images.length > 1 ? `
+        <button class="gallery-nav prev" onclick="showImg(${(i - 1 + images.length) % images.length})">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="gallery-nav next" onclick="showImg(${(i + 1) % images.length})">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <span class="gallery-counter">${i + 1} / ${images.length}</span>` : ''}
+    `
+    document.querySelectorAll('.gallery-thumb').forEach((t, ti) => t.classList.toggle('active', ti === i))
+  }
+
+  async function load() {
+    if (!id) { showError(); return }
+    try {
+      const { data: v } = await RAB.api('/api/vehicles/' + id)
+      document.title = `${v.brand} ${v.model} ${v.year} | RAB`
+
+      images = (v.vehicle_images || []).sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0))
+
+      // Gallery
+      const main   = document.getElementById('gallery-main')
+      const thumbs = document.getElementById('gallery-thumbs')
+      if (images.length) {
+        showImg(0)
+        if (images.length > 1) {
+          thumbs.innerHTML = images.map((img, i) =>
+            `<div class="gallery-thumb ${i === 0 ? 'active' : ''}" onclick="showImg(${i})"><img src="${img.public_url}" alt=""></div>`
+          ).join('')
+        }
+      } else {
+        main.innerHTML = `<div class="card-img-placeholder">${RAB.carSVG()}<span style="font-size:13px">Sin imágenes</span></div>`
+      }
+
+      // Badges
+      const STATUS_BADGE = { 'Disponible': 'available', 'Vendido': 'sold', 'Próximo Ingreso': 'upcoming' }
+      document.getElementById('detail-badges').innerHTML = `
+        <span class="card-badge badge-${STATUS_BADGE[v.status] || 'available'}" style="position:static">${v.status}</span>
+        ${v.featured ? '<span class="badge-featured" style="position:static">Destacado</span>' : ''}
+      `
+
+      document.getElementById('detail-title').textContent = `${v.brand} ${v.model}`
+      document.getElementById('detail-year').textContent  = v.year
+      document.getElementById('detail-price').textContent = RAB.price(v.price)
+
+      // Specs
+      const specs = [
+        { icon: '<path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>', label: 'Año', value: v.year },
+        { icon: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', label: 'Kilometraje', value: Number(v.mileage).toLocaleString('es-CL') + ' km' },
+        { icon: '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4"/>', label: 'Transmisión', value: v.transmission },
+        { icon: '<path d="M3 3l3 9 3-3 3 3 3-9"/><path d="M6 12v9"/>', label: 'Combustible', value: v.fuel },
+        { icon: '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>', label: 'Categoría', value: v.category },
+      ]
+      document.getElementById('specs-grid').innerHTML = specs.map(s => `
+        <div class="spec-card">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${s.icon}</svg>
+          <div><div class="spec-label">${s.label}</div><div class="spec-value">${s.value}</div></div>
+        </div>`).join('')
+
+      // Description
+      if (v.description) {
+        document.getElementById('detail-desc').style.display = 'block'
+        document.getElementById('detail-desc-text').textContent = v.description
+      }
+
+      // CTA
+      const waMsg = `Hola, me interesa cotizar el ${v.brand} ${v.model} ${v.year} — ${RAB.price(v.price)}. ¿Tienen disponibilidad?`
+      document.getElementById('detail-cta').innerHTML = v.status === 'Disponible'
+        ? `<a href="${RAB.whatsappUrl(waMsg)}" target="_blank" class="btn-whatsapp" style="width:100%;justify-content:center;font-size:14px;padding:1rem">
+             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
+             Cotizar este vehículo por WhatsApp
+           </a>`
+        : `<div style="text-align:center;padding:1rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px">
+             <p style="color:var(--text-muted);font-size:13px">Este vehículo no está disponible</p>
+             <a href="./index.html" style="color:var(--blue);font-size:13px;display:inline-block;margin-top:.5rem">Ver otros vehículos →</a>
+           </div>`
+
+      document.getElementById('detail-loading').style.display = 'none'
+      document.getElementById('detail-content').style.display = 'block'
+
+    } catch (e) { showError() }
+  }
+
+  function showError() {
+    document.getElementById('detail-loading').style.display = 'none'
+    document.getElementById('detail-error').style.display   = 'block'
+  }
+
+  load()
+</script>
+</body>
+</html>

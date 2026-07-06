@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAB Automotora | Real Automotora Becerra</title>
+  <meta name="description" content="Haz realidad el sueño de conducir el vehículo que mereces. Inventario seleccionado y servicio de detailing en Buin.">
+  <link rel="stylesheet" href="./assets/css/rab.css">
+  <link rel="icon" href="./assets/images/logo.png">
+  <style>
+    /* ── Hero ── */
+    .hero {
+      position: relative; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: #060C1A; overflow: hidden; padding-top: 64px;
+    }
+    .hero-grid {
+      position: absolute; inset: 0; opacity: .04;
+      background-image: linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow-left  { position:absolute; left:-160px; top:25%; width:500px; height:500px; background:rgba(21,101,192,.2); border-radius:50%; filter:blur(100px); pointer-events:none; }
+    .hero-glow-right { position:absolute; right:-160px; bottom:25%; width:400px; height:400px; background:rgba(249,168,37,.1); border-radius:50%; filter:blur(120px); pointer-events:none; }
+    .hero-line1 { position:absolute; top:0; bottom:0; width:1px; background:linear-gradient(transparent,rgba(21,101,192,.3),transparent); right:20%; }
+    .hero-line2 { position:absolute; top:0; bottom:0; width:1px; background:linear-gradient(transparent,rgba(249,168,37,.2),transparent); right:21%; }
+    .hero-content { position:relative; z-index:1; text-align:center; padding:0 1.5rem; max-width:900px; }
+    .hero-tag { display:inline-flex; align-items:center; gap:.75rem; margin-bottom:1.5rem; }
+    .hero-tag span { font-family:var(--font-title); font-size:11px; font-weight:700; letter-spacing:.35em; text-transform:uppercase; color:var(--gold); }
+    .hero-tag-line { width:32px; height:1px; background:var(--gold); }
+    .hero-title { font-family:var(--font-title); font-weight:900; line-height:1.05; color:var(--white); margin-bottom:1.5rem; }
+    .hero-title .line1 { font-size:clamp(2rem,5vw,4rem); display:block; }
+    .hero-title .line2 { font-size:clamp(2.2rem,5.5vw,4.5rem); display:block; background:linear-gradient(90deg,#1E88E5,#64B5F6,#90CAF9); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .hero-title .line3 { font-size:clamp(1.5rem,3.5vw,3rem); display:block; color:rgba(255,255,255,.75); margin-top:.25rem; }
+    .hero-sub { font-size:15px; color:rgba(255,255,255,.4); max-width:520px; margin:0 auto 2.5rem; line-height:1.7; }
+    .hero-ctas { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; }
+    .hero-stats { display:flex; justify-content:center; gap:2rem; padding-top:2.5rem; border-top:1px solid rgba(255,255,255,.06); flex-wrap:wrap; }
+    .hero-stat-val { font-family:var(--font-title); font-weight:900; font-size:2rem; color:var(--white); }
+    .hero-stat-lbl { font-size:11px; color:rgba(255,255,255,.3); text-transform:uppercase; letter-spacing:.1em; margin-top:2px; }
+    .hero-scroll { position:absolute; bottom:2rem; left:0; right:0; margin-inline:auto; width:max-content; display:flex; flex-direction:column; align-items:center; gap:4px; color:rgba(255,255,255,.2); text-decoration:none; cursor:pointer; transition:color .25s ease; }
+    .hero-scroll:hover { color:rgba(255,255,255,.6); }
+    .hero-scroll span { font-size:10px; text-transform:uppercase; letter-spacing:.15em; }
+    .arrow-bounce { animation: bounce .8s ease-in-out infinite alternate; }
+    @keyframes bounce { from { transform:translateY(0); } to { transform:translateY(5px); } }
+
+    /* ── Hero entrance (CSS-only, above the fold) ── */
+    .hero-tag    { animation: fadeUp .85s cubic-bezier(.22,1,.36,1) .15s both; }
+    .hero-title  { animation: fadeUp .95s cubic-bezier(.22,1,.36,1) .40s both; }
+    .hero-sub    { animation: fadeUp .85s cubic-bezier(.22,1,.36,1) .70s both; }
+    .hero-ctas   { animation: fadeUp .85s cubic-bezier(.22,1,.36,1) 1.00s both; }
+    .hero-stats  { animation: fadeUp .85s cubic-bezier(.22,1,.36,1) 1.30s both; }
+    .hero-scroll { animation: fadeUp .80s ease               1.55s both; }
+  </style>
+</head>
+<body>
+
+<div id="navbar-container"></div>
+<div id="mobile-menu-container"></div>
+<div id="toast"></div>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow-left"></div>
+  <div class="hero-glow-right"></div>
+  <div class="hero-line1"></div>
+  <div class="hero-line2"></div>
+  <div class="hero-content">
+    <div class="hero-tag">
+      <div class="hero-tag-line"></div>
+      <span>Real Automotora Becerra</span>
+      <div class="hero-tag-line"></div>
+    </div>
+    <h1 class="hero-title">
+      <span class="line1">Haz realidad el sueño</span>
+      <span class="line2">de conducir</span>
+      <span class="line3">el vehículo que mereces</span>
+    </h1>
+    <p class="hero-sub">Inventario seleccionado · Asesoría personalizada<br>Servicio de lavado de élite · Buin, Región Metropolitana</p>
+    <div class="hero-ctas">
+      <a href="./inventario/index.html" class="btn-primary">Ver inventario</a>
+      <a href="https://wa.me/56964918228?text=Hola%20RAB%2C%20quiero%20cotizar%20un%20veh%C3%ADculo.%20%C2%BFMe%20pueden%20ayudar%3F" target="_blank" class="btn-outline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
+        Cotizar ahora
+      </a>
+    </div>
+  </div>
+  <a href="#inventario" class="hero-scroll">
+    <span>Descubrir</span>
+    <svg class="arrow-bounce" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+  </a>
+</section>
+
+<!-- ── INVENTARIO (últimos 6) ── -->
+<section class="section" id="inventario">
+  <div class="container">
+    <div class="section-header reveal" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem">
+      <div>
+        <p class="label-tag">Inventario</p>
+        <h2 class="section-title">Vehículos recientes</h2>
+        <p style="color:var(--text-muted);font-size:14px;margin-top:.25rem">Los últimos ingresos a nuestro inventario</p>
+      </div>
+      <a href="./inventario/index.html" class="btn-outline" style="font-size:12px;padding:10px 20px">
+        Ver todos los vehículos →
+      </a>
+    </div>
+    <div id="home-vehicles" class="vehicles-grid"></div>
+    <div style="text-align:center;margin-top:2.5rem">
+      <a href="./inventario/index.html" class="btn-primary">Ver inventario completo →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── LAVADO ── -->
+<section class="section section-alt" id="lavado">
+  <div class="container" style="max-width:800px">
+    <div class="section-header reveal text-center" style="text-align:center">
+      <p class="label-tag">Servicios de Detailing</p>
+      <h2 class="section-title">Planes de lavado</h2>
+      <p style="color:var(--text-muted);font-size:14px;margin-top:.5rem;max-width:480px;margin-inline:auto">Elige el plan que mejor se adapte a tu vehículo. Ambos realizados con productos de primera calidad.</p>
+    </div>
+    <div id="washing-cards" class="wash-grid"></div>
+    <p style="text-align:center;color:rgba(255,255,255,.2);font-size:12px;margin-top:2rem">
+      Agendamiento directo por WhatsApp · Lun–Vie 9:00–19:00 · Sáb 9:00–14:00
+    </p>
+  </div>
+</section>
+
+<div id="footer-container"></div>
+
+<script src="./assets/js/config.js"></script>
+<script>
+  // ── Render layout ─────────────────────────────────────────
+  document.getElementById('navbar-container').innerHTML = RAB.renderNavbar('Inicio')
+  document.getElementById('footer-container').innerHTML = RAB.renderFooter()
+  RAB.initNavbarScroll()
+
+  // ── Cargar planes de lavado desde API ────────────────────
+  async function loadWashingCards() {
+    try {
+      const plans = await RAB.api('/api/wash-plans')
+      document.getElementById('washing-cards').innerHTML = RAB.renderWashing(plans && plans.length >= 2 ? plans : null)
+    } catch (e) {
+      document.getElementById('washing-cards').innerHTML = RAB.renderWashing()
+    }
+    RAB.initReveal()
+  }
+  loadWashingCards()
+
+  // ── Cargar últimos 6 vehículos ────────────────────────────
+  async function loadHomeVehicles() {
+    const grid = document.getElementById('home-vehicles')
+    grid.innerHTML = Array(6).fill(`
+      <div class="skeleton-card">
+        <div class="skeleton" style="height:190px"></div>
+        <div style="padding:1rem">
+          <div class="skeleton" style="height:16px;margin-bottom:8px;width:75%"></div>
+          <div class="skeleton" style="height:22px;margin-bottom:8px;width:50%"></div>
+          <div class="skeleton" style="height:12px;width:100%"></div>
+        </div>
+      </div>`).join('')
+
+    try {
+      const { data } = await RAB.api('/api/vehicles?limit=6')
+      grid.innerHTML = data.length
+        ? data.map((v, i) => RAB.vehicleCard(v, i)).join('')
+        : '<p style="color:var(--text-muted);text-align:center;grid-column:1/-1">No hay vehículos disponibles aún.</p>'
+    } catch (e) {
+      grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;grid-column:1/-1">Error cargando vehículos.</p>'
+    }
+    RAB.initReveal()
+  }
+
+  loadHomeVehicles()
+</script>
+</body>
+</html>
