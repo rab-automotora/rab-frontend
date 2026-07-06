@@ -1,23 +1,31 @@
 /* frontend/assets/css/rab.css */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&family=Roboto:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 /* ── Variables ───────────────────────────────────────────── */
 :root {
-  --navy:        #0D1B4B;
-  --navy-light:  #1565C0;
-  --blue:        #1E88E5;
-  --blue-light:  #64B5F6;
-  --blue-pale:   #90CAF9;
-  --gold:        #F9A825;
-  --green-wa:    #25D366;
-  --bg-dark:     #080E1F;
-  --bg-card:     #111827;
-  --bg-section:  #060C1A;
-  --white:       #ffffff;
-  --text-muted:  rgba(255,255,255,0.45);
-  --border:      rgba(255,255,255,0.07);
-  --font-title:  'Montserrat', sans-serif;
-  --font-body:   'Roboto', sans-serif;
+  /* ── Paleta derivada del logo · Fase 1 "Cromo & Azur" ────── */
+  --navy:        #142A44;   /* azur profundo · fondos sólidos de marca      */
+  --navy-light:  #2C6A9C;   /* azur medio · acción principal / estados      */
+  --blue:        #3E9FCB;   /* AZUR · firma (del #3990BB del logo)          */
+  --blue-light:  #5FC2DA;   /* azur brillante (del #55BBD4 del logo)        */
+  --blue-pale:   #8FD3E6;   /* azur pálido · detalles y enlaces suaves      */
+  --gold:        #E4A94E;   /* oro · chispa puntual (hilo del engranaje)    */
+  --green-wa:    #25D366;   /* WhatsApp · marca, sin cambios                */
+  --bg-dark:     #0A0E14;   /* fondo · noche fría azulada                   */
+  --bg-card:     #1B2331;   /* superficie elevada                          */
+  --bg-section:  #0C121B;   /* secciones alternas                          */
+  --white:       #EEF2F5;   /* blanco cromo (frío)                         */
+  --text-muted:  rgba(238,242,245,0.48);
+  --border:      rgba(200,220,240,0.09);
+  /* Cromo · motivo metálico (engranaje / emblema del logo) */
+  --chrome-1:    #EDF1F4;
+  --chrome-2:    #AEB8C0;
+  --chrome-3:    #6E7882;
+  --chrome-grad: linear-gradient(140deg,var(--chrome-1) 0%,var(--chrome-3) 42%,var(--chrome-2) 58%,var(--chrome-1) 100%);
+  /* Tipografía · display industrial + humanista + mono tabular */
+  --font-title:  'Archivo', 'Bahnschrift', 'Segoe UI', system-ui, sans-serif;
+  --font-body:   'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-data:   'IBM Plex Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
 }
 
 /* ── Reset ───────────────────────────────────────────────── */
@@ -144,12 +152,12 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 .vehicle-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(21,101,192,.5);
-  box-shadow: 0 8px 30px rgba(21,101,192,.15);
+  border-color: rgba(62,159,203,.5);
+  box-shadow: 0 8px 30px rgba(62,159,203,.15);
 }
 .card-img {
   position: relative; height: 190px; overflow: hidden;
-  background: linear-gradient(135deg, var(--navy) 0%, rgba(21,101,192,.2) 100%);
+  background: linear-gradient(135deg, var(--navy) 0%, rgba(62,159,203,.2) 100%);
 }
 .card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
 .vehicle-card:hover .card-img img { transform: scale(1.05); }
@@ -170,8 +178,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .badge-upcoming  { background: rgba(120,53,15,.7); color: #fcd34d; border-color: rgba(120,53,15,.5); }
 .badge-featured  {
   position: absolute; top: 10px; right: 10px;
-  background: rgba(249,168,37,.2); color: var(--gold);
-  border: 1px solid rgba(249,168,37,.3);
+  background: rgba(228,169,78,.2); color: var(--gold);
+  border: 1px solid rgba(228,169,78,.3);
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   padding: 4px 10px; border-radius: 20px;
 }
@@ -197,8 +205,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .card-category {
   font-size: 11px; font-weight: 600;
   color: var(--blue-pale);
-  background: rgba(21,101,192,.15);
-  border: 1px solid rgba(21,101,192,.25);
+  background: rgba(62,159,203,.15);
+  border: 1px solid rgba(62,159,203,.25);
   padding: 4px 10px; border-radius: 20px;
 }
 .card-actions { display: flex; align-items: center; gap: 8px; }
@@ -254,38 +262,38 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 @media (max-width: 640px) { .wash-grid { grid-template-columns: 1fr; } }
 .wash-card { border-radius: 16px; overflow: hidden; border: 1px solid var(--border); display: flex; flex-direction: column; }
 .wash-header { padding: 1.5rem; }
-.wash-header-standard { background: #0F1A35; }
-.wash-header-premium  { background: linear-gradient(135deg, #0D1B4B, #1565C0cc); }
+.wash-header-standard { background: #16212E; }
+.wash-header-premium  { background: linear-gradient(135deg, #142A44, #2C6A9Ccc); }
 .wash-plan-name { font-family: var(--font-title); font-weight: 900; font-size: 20px; color: var(--white); margin-top: .5rem; }
 .wash-plan-desc { font-size: 13px; margin-top: 2px; }
 .wash-plan-desc-standard { color: var(--blue-pale); }
 .wash-plan-desc-premium  { color: var(--gold); }
 .badge-recommended {
   display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(249,168,37,.15); color: var(--gold);
-  border: 1px solid rgba(249,168,37,.3);
+  background: rgba(228,169,78,.15); color: var(--gold);
+  border: 1px solid rgba(228,169,78,.3);
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
   padding: 4px 12px; border-radius: 20px; margin-top: 8px;
   animation: pulse-badge 2s ease-in-out infinite;
 }
 .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: dot-blink 1.5s ease-in-out infinite; }
-@keyframes pulse-badge { 0%,100% { box-shadow: 0 0 0 0 rgba(249,168,37,.4); } 50% { box-shadow: 0 0 0 6px rgba(249,168,37,0); } }
+@keyframes pulse-badge { 0%,100% { box-shadow: 0 0 0 0 rgba(228,169,78,.4); } 50% { box-shadow: 0 0 0 6px rgba(228,169,78,0); } }
 @keyframes dot-blink   { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
 .wash-prices { padding: .5rem 1.5rem 1rem; flex: 1; }
-.wash-prices-standard { background: #0A1228; }
-.wash-prices-premium  { background: #0D1B4B; }
+.wash-prices-standard { background: #0C141E; }
+.wash-prices-premium  { background: #142236; }
 .wash-price-row { display: flex; justify-content: space-between; align-items: center; padding: .6rem 0; border-bottom: 1px solid rgba(255,255,255,.05); }
 .wash-price-row:last-child { border-bottom: none; }
 .wash-price-size  { font-size: 13px; color: rgba(255,255,255,.55); }
 .wash-price-value { font-family: var(--font-title); font-weight: 700; font-size: 14px; }
 .wash-price-value-standard { color: var(--white); }
 .wash-price-value-premium  { color: var(--blue-light); }
-.wash-features { padding: 1rem 1.5rem; background: #080E1F; border-top: 1px solid rgba(255,255,255,.05); display: flex; flex-wrap: wrap; gap: 6px; }
+.wash-features { padding: 1rem 1.5rem; background: var(--bg-dark); border-top: 1px solid rgba(255,255,255,.05); display: flex; flex-wrap: wrap; gap: 6px; }
 .wash-feature { font-size: 11px; color: rgba(255,255,255,.5); background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); padding: 4px 10px; border-radius: 8px; display: flex; align-items: center; gap: 5px; }
-.wash-cta { padding: 1rem 1.5rem 1.5rem; background: #080E1F; }
+.wash-cta { padding: 1rem 1.5rem 1.5rem; background: var(--bg-dark); }
 
 /* ── Footer ──────────────────────────────────────────────── */
-.footer { background: #0A1236; border-top: 1px solid rgba(255,255,255,.06); }
+.footer { background: #0D1622; border-top: 1px solid rgba(255,255,255,.06); }
 .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 2.5rem; padding: 3.5rem 1.5rem; }
 @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
@@ -332,7 +340,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .admin-wrap { display: flex; min-height: 100vh; }
 .admin-sidebar {
   width: 220px; flex-shrink: 0;
-  background: #0A1236;
+  background: #0D1622;
   border-right: 1px solid rgba(255,255,255,.06);
   display: flex; flex-direction: column;
 }
@@ -347,8 +355,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 .admin-nav-item:hover { background: rgba(255,255,255,.05); color: var(--white); }
 .admin-nav-item.active {
-  background: rgba(21,101,192,.2); color: var(--white); font-weight: 600;
-  border-color: rgba(21,101,192,.3);
+  background: rgba(62,159,203,.2); color: var(--white); font-weight: 600;
+  border-color: rgba(62,159,203,.3);
 }
 .admin-nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
 .admin-sidebar-footer { padding: .75rem; border-top: 1px solid rgba(255,255,255,.06); }
@@ -370,11 +378,11 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   transition: border-color .2s; outline: none; width: 100%;
 }
 .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--navy-light); }
-.form-select option { background: #1a1a2e; }
+.form-select option { background: #141B26; }
 .form-textarea { resize: vertical; min-height: 80px; }
 
 /* ── Admin table ─────────────────────────────────────────── */
-.admin-table-wrap { background: rgba(13,27,75,.3); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.admin-table-wrap { background: rgba(27,35,49,.3); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .admin-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .15em; color: rgba(255,255,255,.3); padding: .75rem 1.25rem; background: rgba(255,255,255,.02); text-align: left; }
 .admin-table td { padding: .85rem 1.25rem; border-top: 1px solid rgba(255,255,255,.04); color: rgba(255,255,255,.75); vertical-align: middle; }
@@ -383,8 +391,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 /* ── Stat card ───────────────────────────────────────────── */
 .stat-card { border-radius: 12px; padding: 1.25rem; border: 1px solid; }
 .stat-card-available { background: rgba(16,185,129,.08); border-color: rgba(16,185,129,.2); }
-.stat-card-sold      { background: rgba(30,136,229,.08); border-color: rgba(30,136,229,.2); }
-.stat-card-upcoming  { background: rgba(249,168,37,.08); border-color: rgba(249,168,37,.2); }
+.stat-card-sold      { background: rgba(62,159,203,.08); border-color: rgba(62,159,203,.2); }
+.stat-card-upcoming  { background: rgba(228,169,78,.08); border-color: rgba(228,169,78,.2); }
 .stat-card-total     { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.08); }
 .stat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: .75rem; }
 .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.4); margin-bottom: 4px; font-family: var(--font-title); font-weight: 700; }
