@@ -252,7 +252,7 @@ const RAB = {
 
       const featsHtml = plan.features.map(function (f) {
         return '<span class="wash-feature">' +
-          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#64B5F6" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' + f +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5FC2DA" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' + f +
         '</span>'
       }).join('')
 
