@@ -137,9 +137,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .btn-gold:hover { filter: brightness(1.05); transform: translateY(-1px); }
 
 /* ── Section layout ──────────────────────────────────────── */
-.section { padding: 1.5rem 1.5rem; }
+.section { padding: clamp(3rem, 7vw, 5rem) 1.5rem; }
 .section-alt { background: var(--bg-section); }
-.container { max-width: 1140px; margin: 0 auto; }
+.container { max-width: 1200px; margin: 0 auto; }
 .section-header { margin-bottom: 2.5rem; }
 .section-title {
   font-family: var(--font-title); font-weight: 900;
