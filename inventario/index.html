@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario | RAB Automotora</title>
+  <link rel="stylesheet" href="../assets/css/rab.css">
+  <link rel="icon" href="../assets/images/logo.png">
+  <style>
+    .inventory-hero {
+      background: linear-gradient(180deg, #060C1A 0%, #080E1F 100%);
+      padding: 7rem 1.5rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+  </style>
+</head>
+<body>
+<div id="navbar-container"></div>
+<div id="toast"></div>
+
+<section class="inventory-hero">
+  <div class="container">
+    <p class="label-tag">Catálogo completo</p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-top:.4rem">
+      <div>
+        <h1 style="font-family:var(--font-title);font-weight:900;font-size:clamp(2rem,4vw,3rem);color:var(--white)">Inventario</h1>
+        <p id="vehicle-count" style="color:var(--text-muted);font-size:14px;margin-top:.25rem">Cargando...</p>
+      </div>
+      <div id="active-filter-tag" style="display:none;align-items:center;gap:8px;font-size:13px;color:var(--blue-pale)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+        <span id="active-filter-label"></span>
+        <button onclick="resetFilter()" style="color:rgba(255,255,255,.4);display:flex">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div id="filters" class="filters"></div>
+    <div id="vehicles-grid" class="vehicles-grid"></div>
+    <div id="load-more-wrap" style="text-align:center;margin-top:2rem;display:none">
+      <button id="load-more-btn" onclick="loadMore()" class="btn-outline">Cargar más</button>
+    </div>
+    <p id="count-footer" style="text-align:center;color:rgba(255,255,255,.2);font-size:12px;margin-top:1rem"></p>
+  </div>
+</section>
+
+<div id="footer-container"></div>
+
+<script src="../assets/js/config.js"></script>
+<script>
+  let currentCategory = 'Todos'
+  let currentPage = 0
+  let totalCount  = 0
+  const PAGE_SIZE = 12
+
+  document.getElementById('navbar-container').innerHTML = RAB.renderNavbar('Inventario')
+  document.getElementById('footer-container').innerHTML = RAB.renderFooter()
+  RAB.initNavbarScroll()
+
+  // Filters
+  const filtersEl = document.getElementById('filters')
+  RAB.CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button')
+    btn.className = 'filter-btn' + (cat === 'Todos' ? ' active' : '')
+    btn.textContent = cat
+    btn.onclick = () => setFilter(cat)
+    filtersEl.appendChild(btn)
+  })
+
+  function setFilter(cat) {
+    currentCategory = cat
+    currentPage = 0
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.textContent === cat))
+    const tag = document.getElementById('active-filter-tag')
+    if (cat !== 'Todos') {
+      tag.style.display = 'flex'
+      document.getElementById('active-filter-label').textContent = 'Filtrando: ' + cat
+    } else {
+      tag.style.display = 'none'
+    }
+    loadVehicles(false)
+  }
+
+  function resetFilter() { setFilter('Todos') }
+
+  async function loadVehicles(append = false) {
+    const grid = document.getElementById('vehicles-grid')
+    if (!append) {
+      grid.innerHTML = Array(6).fill(`
+        <div class="skeleton-card">
+          <div class="skeleton" style="height:190px"></div>
+          <div style="padding:1rem">
+            <div class="skeleton" style="height:16px;margin-bottom:8px;width:75%"></div>
+            <div class="skeleton" style="height:22px;margin-bottom:8px;width:50%"></div>
+            <div class="skeleton" style="height:12px;width:100%"></div>
+          </div>
+        </div>`).join('')
+    }
+
+    try {
+      const params = new URLSearchParams({ page: currentPage, limit: PAGE_SIZE })
+      if (currentCategory !== 'Todos') params.set('category', currentCategory)
+
+      const { data, count } = await RAB.api('/api/vehicles/all?' + params)
+      totalCount = count || 0
+
+      document.getElementById('vehicle-count').textContent =
+        totalCount + ' vehículo' + (totalCount !== 1 ? 's' : '') + ' en total'
+
+      if (append) {
+        data.forEach((v, i) => { const el = document.createElement('div'); el.innerHTML = RAB.vehicleCard(v, i); grid.appendChild(el.firstElementChild) })
+      } else {
+        grid.innerHTML = data.length
+          ? data.map((v, i) => RAB.vehicleCard(v, i)).join('')
+          : `<p style="color:var(--text-muted);text-align:center;grid-column:1/-1;padding:4rem 0">
+               No hay vehículos en esta categoría.<br>
+               <button onclick="resetFilter()" style="color:var(--blue);margin-top:.5rem;font-size:13px">Ver todos</button>
+             </p>`
+      }
+      RAB.initReveal()
+
+      const shown = Math.min((currentPage + 1) * PAGE_SIZE, totalCount)
+      const hasMore = shown < totalCount
+      document.getElementById('load-more-wrap').style.display = hasMore ? 'block' : 'none'
+      document.getElementById('count-footer').textContent =
+        totalCount > 0 ? `Mostrando ${Math.min((currentPage + 1) * PAGE_SIZE, totalCount)} de ${totalCount} vehículos` : ''
+
+    } catch (e) {
+      if (!append) grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;grid-column:1/-1">Error cargando vehículos.</p>'
+    }
+  }
+
+  async function loadMore() {
+    const btn = document.getElementById('load-more-btn')
+    btn.textContent = 'Cargando...'
+    btn.disabled = true
+    currentPage++
+    await loadVehicles(true)
+    btn.textContent = `Cargar más (${totalCount - Math.min((currentPage + 1) * PAGE_SIZE, totalCount)} restantes)`
+    btn.disabled = false
+  }
+
+  loadVehicles()
+</script>
+</body>
+</html>

@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin | RAB Automotora</title>
+  <link rel="stylesheet" href="../assets/css/rab.css">
+  <link rel="icon" href="../assets/images/logo.png">
+  <style>
+    /* ══ LOGIN ══════════════════════════════════════════════ */
+    #login-screen {
+      min-height:100vh; background:var(--bg-dark); display:flex;
+      align-items:center; justify-content:center; padding:1.5rem;
+      position:relative; overflow:hidden;
+    }
+    .login-glow { position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);width:400px;height:400px;background:rgba(21,101,192,.08);border-radius:50%;filter:blur(80px);pointer-events:none; }
+    .login-grid { position:absolute;inset:0;opacity:.03;background-image:linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);background-size:40px 40px; }
+    .login-box  { position:relative;width:100%;max-width:400px; }
+    .login-card { background:rgba(13,27,75,.5);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:2rem;backdrop-filter:blur(8px); }
+
+    /* ══ ADMIN LAYOUT ════════════════════════════════════════ */
+    #admin-app { display:none; }
+
+    /* Top bar (mobile only) */
+    .admin-topbar {
+      display:none;
+      position:fixed; top:0; left:0; right:0; z-index:200;
+      height:56px; background:#0A1236;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      align-items:center; justify-content:space-between;
+      padding:0 1rem;
+    }
+    .admin-topbar img  { height:32px; width:auto; object-fit:contain; }
+    .admin-topbar-btn  { background:none; border:none; color:rgba(255,255,255,.6); padding:6px; cursor:pointer; display:flex; align-items:center; }
+    .admin-topbar-btn:hover { color:#fff; }
+
+    /* Overlay (mobile sidebar backdrop) */
+    #sidebar-overlay {
+      display:none; position:fixed; inset:0; z-index:149;
+      background:rgba(0,0,0,.6); backdrop-filter:blur(2px);
+    }
+    #sidebar-overlay.active { display:block; }
+
+    /* Sidebar */
+    .admin-sidebar {
+      position:fixed; top:0; left:0; bottom:0; z-index:150;
+      width:220px; background:#0A1236;
+      border-right:1px solid rgba(255,255,255,.06);
+      display:flex; flex-direction:column;
+      transition:transform .25s ease;
+    }
+
+    /* Main content */
+    .admin-main {
+      margin-left:220px;
+      min-height:100vh;
+      padding:2rem 2.5rem;
+      background:var(--bg-dark);
+    }
+
+    /* ── Responsive breakpoint ── */
+    @media (max-width: 768px) {
+      .admin-topbar  { display:flex; }
+      .admin-sidebar { transform:translateX(-100%); }
+      .admin-sidebar.open { transform:translateX(0); }
+      .admin-main    { margin-left:0; padding:1rem; padding-top:calc(56px + 1rem); }
+    }
+
+    /* ══ STATS GRID ══════════════════════════════════════════ */
+    .stats-grid {
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:1rem;
+      margin-bottom:2rem;
+    }
+    @media (max-width:900px) { .stats-grid { grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:480px) { .stats-grid { grid-template-columns:1fr 1fr; gap:.75rem; } }
+
+    /* ══ TABLE ═══════════════════════════════════════════════ */
+    .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .admin-table  { min-width:520px; }
+
+    /* Hide less important columns on small screens */
+    @media (max-width:560px) {
+      .col-hide { display:none; }
+    }
+
+    /* ══ FORM GRID ═══════════════════════════════════════════ */
+    .form-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+      gap:1rem;
+    }
+    @media (max-width:480px) {
+      .form-grid { grid-template-columns:1fr; }
+    }
+
+    /* ══ IMAGE UPLOADER ══════════════════════════════════════ */
+    .drop-zone { border:2px dashed rgba(255,255,255,.1);border-radius:12px;padding:2rem;text-align:center;position:relative;cursor:pointer;transition:border-color .2s; }
+    .drop-zone:hover,.drop-zone.drag { border-color:var(--navy-light); }
+    .drop-zone input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer; }
+    .img-preview-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:.5rem;margin-top:1rem; }
+    .img-preview { position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;border:2px solid transparent; }
+    .img-preview.cover { border-color:var(--navy-light); }
+    .img-preview img { width:100%;height:100%;object-fit:cover; }
+    .img-preview-actions { position:absolute;inset:0;background:rgba(0,0,0,.65);opacity:0;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .2s; }
+    .img-preview:hover .img-preview-actions,
+    .img-preview:active .img-preview-actions { opacity:1; } /* :active para touch */
+    .cover-label { position:absolute;top:4px;left:4px;background:var(--navy-light);color:#fff;font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:4px; }
+
+    /* ══ PAGE HEADER ═════════════════════════════════════════ */
+    .page-header {
+      display:flex; justify-content:space-between; align-items:center;
+      flex-wrap:wrap; gap:.75rem; margin-bottom:1.75rem;
+    }
+    .page-header h1 { font-family:var(--font-title);font-weight:700;font-size:1.4rem;color:var(--white); }
+    .page-header p  { color:rgba(255,255,255,.35);font-size:13px;margin-top:3px; }
+
+    /* ══ WASH ADMIN ═══════════════════════════════════════════ */
+    .wash-admin-feature {
+      display:inline-flex; align-items:center; gap:4px;
+      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+      color:rgba(255,255,255,.65); font-size:12px;
+      padding:4px 8px 4px 10px; border-radius:8px;
+    }
+
+    /* ══ GLOBAL LOADING OVERLAY ════════════════════════════════ */
+    #global-loading {
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(6,12,26,.88); backdrop-filter:blur(6px);
+      align-items:center; justify-content:center; flex-direction:column; gap:1.25rem;
+    }
+    #global-loading.active { display:flex; }
+    #global-loading .gl-spinner {
+      width:44px; height:44px; border-radius:50%;
+      border:3px solid rgba(255,255,255,.08);
+      border-top-color:var(--navy-light);
+      animation:spin .7s linear infinite;
+    }
+    #global-loading .gl-text {
+      font-family:var(--font-title); font-weight:600; font-size:13px;
+      color:rgba(255,255,255,.4); letter-spacing:.06em; text-transform:uppercase;
+    }
+  </style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="global-loading">
+  <div class="gl-spinner"></div>
+  <p class="gl-text">Procesando...</p>
+</div>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-glow"></div>
+  <div class="login-grid"></div>
+  <div class="login-box">
+    <div style="text-align:center;margin-bottom:2rem">
+      <img src="../assets/images/logo.png" alt="RAB" style="height:60px;width:auto;object-fit:contain;margin:0 auto 1rem;display:block">
+      <p style="color:rgba(255,255,255,.3);font-size:11px;text-transform:uppercase;letter-spacing:.3em">Panel de Administración</p>
+    </div>
+    <div class="login-card">
+      <h1 style="font-family:var(--font-title);font-weight:700;color:var(--white);font-size:1.1rem;margin-bottom:1.5rem">Iniciar sesión</h1>
+      <form id="login-form" onsubmit="doLogin(event)">
+        <div class="form-group" style="margin-bottom:1rem">
+          <label class="form-label">Email</label>
+          <input id="login-email" type="email" class="form-input" placeholder="admin@rab.cl" required autocomplete="email">
+        </div>
+        <div class="form-group" style="margin-bottom:1.25rem">
+          <label class="form-label">Contraseña</label>
+          <div style="position:relative">
+            <input id="login-pass" type="password" class="form-input" placeholder="••••••••" required autocomplete="current-password" style="padding-right:2.5rem">
+            <button type="button" onclick="togglePass()" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.3);background:none;border:none;cursor:pointer;display:flex">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div id="login-error" style="display:none;color:#fca5a5;font-size:12px;background:rgba(69,10,10,.5);border:1px solid rgba(252,165,165,.2);border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem"></div>
+        <button type="submit" id="login-btn" class="btn-primary" style="width:100%;justify-content:center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Ingresar
+        </button>
+      </form>
+    </div>
+    <p style="text-align:center;color:rgba(255,255,255,.15);font-size:11px;margin-top:1.5rem">Acceso restringido · Solo administradores RAB</p>
+  </div>
+</div>
+
+<!-- ══ ADMIN APP ═══════════════════════════════════════════════ -->
+<div id="admin-app">
+
+  <!-- Mobile top bar -->
+  <div class="admin-topbar">
+    <img src="../assets/images/logo.png" alt="RAB">
+    <button class="admin-topbar-btn" onclick="toggleSidebar()" aria-label="Menú">
+      <svg id="topbar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Overlay -->
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-sidebar-logo" style="padding:1.25rem 1rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between">
+      <a href="../index.html" target="_blank">
+        <img src="../assets/images/logo.png" alt="RAB" style="height:34px;width:auto;object-fit:contain">
+      </a>
+      <!-- Close button (mobile only) -->
+      <button onclick="closeSidebar()" style="display:none;background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;padding:4px" id="sidebar-close-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <nav class="admin-nav" style="flex:1;padding:.75rem;display:flex;flex-direction:column;gap:2px">
+      <a class="admin-nav-item active" data-page="dashboard" onclick="showPage('dashboard');closeSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a class="admin-nav-item" data-page="vehicles" onclick="showPage('vehicles');closeSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-3h8l2 3h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+        Vehículos
+      </a>
+      <a class="admin-nav-item" data-page="washing" onclick="showPage('washing');closeSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        Lavado
+      </a>
+    </nav>
+    <div style="padding:.75rem;border-top:1px solid rgba(255,255,255,.06)">
+      <a href="../index.html" target="_blank" class="admin-nav-item" style="font-size:12px;color:rgba(255,255,255,.3)">Ver sitio →</a>
+      <button class="admin-nav-item" onclick="doLogout()" style="width:100%;text-align:left;color:rgba(255,255,255,.4)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="admin-main">
+
+    <!-- ── DASHBOARD ── -->
+    <div id="page-dashboard" class="admin-page active">
+      <div class="page-header">
+        <div>
+          <h1>Dashboard</h1>
+          <p>Resumen del inventario</p>
+        </div>
+      </div>
+
+      <div id="stats-grid" class="stats-grid"></div>
+
+      <div class="admin-table-wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.06);flex-wrap:wrap;gap:.5rem">
+          <span style="font-family:var(--font-title);font-weight:700;color:var(--white);font-size:13px">Inventario reciente</span>
+          <button onclick="showPage('vehicles');openForm()" class="btn-primary" style="font-size:11px;padding:6px 14px">+ Agregar</button>
+        </div>
+        <div class="table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Vehículo</th>
+                <th class="col-hide">Precio</th>
+                <th class="col-hide">Categoría</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VEHÍCULOS ── -->
+    <div id="page-vehicles" class="admin-page">
+      <div class="page-header">
+        <div>
+          <h1>Vehículos</h1>
+          <p id="vehicle-total"></p>
+        </div>
+        <button onclick="openForm()" class="btn-primary">+ Agregar</button>
+      </div>
+
+      <!-- Formulario -->
+      <div id="vehicle-form-wrap" style="display:none;margin-bottom:2rem">
+        <div class="form-section">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+            <h2 class="form-section-title" id="form-title" style="margin-bottom:0">Nuevo vehículo</h2>
+            <button onclick="closeForm()" style="color:rgba(255,255,255,.4);display:flex;background:none;border:none;cursor:pointer">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <form id="vehicle-form" onsubmit="saveVehicle(event)">
+            <input type="hidden" id="f-id">
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Marca *</label><input id="f-brand" class="form-input" required placeholder="Toyota"></div>
+              <div class="form-group"><label class="form-label">Modelo *</label><input id="f-model" class="form-input" required placeholder="RAV4"></div>
+              <div class="form-group"><label class="form-label">Año *</label><input id="f-year" type="number" class="form-input" required min="1990" max="2030" placeholder="2023" inputmode="numeric"></div>
+              <div class="form-group"><label class="form-label">Precio CLP *</label><input id="f-price" type="number" class="form-input" required min="0" placeholder="12900000" inputmode="numeric"></div>
+              <div class="form-group"><label class="form-label">Kilometraje</label><input id="f-mileage" type="number" class="form-input" min="0" value="0" inputmode="numeric"></div>
+              <div class="form-group">
+                <label class="form-label">Categoría *</label>
+                <select id="f-category" class="form-select"><option>Sedán</option><option>SUV</option><option>Pickup</option><option>Hatchback</option><option>Deportivo</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Transmisión *</label>
+                <select id="f-transmission" class="form-select"><option>Automático</option><option>Manual</option><option>CVT</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Combustible *</label>
+                <select id="f-fuel" class="form-select"><option>Bencina</option><option>Diésel</option><option>Híbrido</option><option>Eléctrico</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Estado *</label>
+                <select id="f-status" class="form-select"><option>Disponible</option><option>Vendido</option><option>Próximo Ingreso</option></select>
+              </div>
+              <div class="form-group full"><label class="form-label">Descripción</label><textarea id="f-desc" class="form-textarea" placeholder="Detalles adicionales..."></textarea></div>
+              <div class="form-group" style="display:flex;align-items:center;gap:.5rem;padding-top:1rem">
+                <input id="f-featured" type="checkbox" style="width:16px;height:16px;accent-color:var(--navy-light)">
+                <label style="color:rgba(255,255,255,.6);font-size:13px;cursor:pointer" for="f-featured">Marcar como Destacado</label>
+              </div>
+            </div>
+            <div style="display:flex;gap:1rem;margin-top:1.5rem;flex-wrap:wrap">
+              <button type="submit" id="form-save-btn" class="btn-primary">Guardar vehículo</button>
+              <button type="button" onclick="closeForm()" style="color:rgba(255,255,255,.4);font-size:13px;background:none;border:none;cursor:pointer">Cancelar</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Imágenes -->
+        <div id="image-section" style="display:none" class="form-section">
+          <h2 class="form-section-title">Imágenes del vehículo</h2>
+          <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:1rem">Sube fotos del vehículo. La primera imagen o la que marques será la portada.</p>
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" id="img-input" multiple accept="image/*" onchange="uploadImages(this.files)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5" style="margin:0 auto .75rem;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p style="color:rgba(255,255,255,.5);font-size:13px">Arrastra fotos o haz clic</p>
+            <p style="color:rgba(255,255,255,.25);font-size:11px;margin-top:4px">JPG, PNG, WEBP · Máx. 8 MB</p>
+          </div>
+          <div id="img-error" style="display:none;color:#fca5a5;font-size:12px;margin-top:.5rem"></div>
+          <div id="img-preview-grid" class="img-preview-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="admin-table-wrap">
+        <div class="table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Vehículo</th>
+                <th class="col-hide">Precio</th>
+                <th class="col-hide">Categoría</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="vehicles-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LAVADO ── -->
+    <div id="page-washing" class="admin-page">
+      <div class="page-header">
+        <div>
+          <h1>Planes de Lavado</h1>
+          <p>Edita los precios y características de cada plan</p>
+        </div>
+      </div>
+      <div id="washing-loading" style="text-align:center;padding:3rem 1.5rem">
+        <div class="spinner"></div>
+        <p style="margin-top:1rem;font-size:13px;color:rgba(255,255,255,.3)">Cargando planes...</p>
+      </div>
+      <div id="washing-plans-forms" style="display:none"></div>
+    </div>
+
+  </main>
+</div><!-- /#admin-app -->
+
+<script src="../assets/js/config.js"></script>
+<script>
+/* ══ SIDEBAR TOGGLE ════════════════════════════════════════ */
+function toggleSidebar() {
+  const sb  = document.getElementById('admin-sidebar')
+  const ov  = document.getElementById('sidebar-overlay')
+  const btn = document.getElementById('sidebar-close-btn')
+  const isOpen = sb.classList.contains('open')
+  if (isOpen) {
+    sb.classList.remove('open')
+    ov.classList.remove('active')
+    btn.style.display = 'none'
+  } else {
+    sb.classList.add('open')
+    ov.classList.add('active')
+    btn.style.display = 'block'
+  }
+}
+function closeSidebar() {
+  document.getElementById('admin-sidebar').classList.remove('open')
+  document.getElementById('sidebar-overlay').classList.remove('active')
+  document.getElementById('sidebar-close-btn').style.display = 'none'
+}
+// Mostrar botón cerrar en mobile al abrir
+window.addEventListener('resize', function () {
+  if (window.innerWidth > 768) closeSidebar()
+})
+
+/* ══ AUTH ══════════════════════════════════════════════════ */
+function getToken() { return localStorage.getItem('rab_token') }
+
+async function doLogin(e) {
+  e.preventDefault()
+  const btn   = document.getElementById('login-btn')
+  const errEl = document.getElementById('login-error')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px"></span> Ingresando...'
+  errEl.style.display = 'none'
+  try {
+    const res  = await fetch(RAB.API_URL + '/api/admin/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: document.getElementById('login-email').value, password: document.getElementById('login-pass').value })
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error)
+    localStorage.setItem('rab_token', data.access_token)
+    document.getElementById('login-screen').style.display = 'none'
+    document.getElementById('admin-app').style.display    = 'block'
+    initAdmin()
+  } catch (err) {
+    errEl.textContent    = err.message
+    errEl.style.display  = 'block'
+  }
+  btn.disabled = false
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Ingresar'
+}
+
+function doLogout() { localStorage.removeItem('rab_token'); location.reload() }
+
+function togglePass() {
+  const inp = document.getElementById('login-pass')
+  inp.type  = inp.type === 'password' ? 'text' : 'password'
+}
+
+/* ══ PAGES ═════════════════════════════════════════════════ */
+function showPage(name) {
+  document.querySelectorAll('.admin-page').forEach(function (p) { p.classList.remove('active') })
+  document.querySelectorAll('.admin-nav-item').forEach(function (a) { a.classList.remove('active') })
+  document.getElementById('page-' + name).classList.add('active')
+  const navItem = document.querySelector('[data-page="' + name + '"]')
+  if (navItem) navItem.classList.add('active')
+  if (name === 'dashboard') loadDashboard()
+  if (name === 'vehicles')  loadVehiclesTable()
+  if (name === 'washing')   loadWashingPlans()
+}
+
+/* ══ DASHBOARD ═════════════════════════════════════════════ */
+async function loadDashboard() {
+  try {
+    const [stats, vehicles] = await Promise.all([
+      RAB.api('/api/admin/stats'),
+      RAB.api('/api/vehicles/all?page=0&limit=10')
+    ])
+    const STAT_CONFIG = [
+      { key: 'available', label: 'Disponibles',   cls: 'available', icon: '<path d="M19 17H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-3h8l2 3h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>', color: '#10b981' },
+      { key: 'sold',      label: 'Vendidos',       cls: 'sold',      icon: '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>', color: '#1e88e5' },
+      { key: 'upcoming',  label: 'Próx. Ingreso',  cls: 'upcoming',  icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>', color: '#f9a825' },
+      { key: 'total',     label: 'Total',          cls: 'total',     icon: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', color: 'rgba(255,255,255,.5)' },
+    ]
+    document.getElementById('stats-grid').innerHTML = STAT_CONFIG.map(function (s, idx) {
+      return '<div class="stat-card stat-card-' + s.cls + '" style="animation:fadeUp .4s cubic-bezier(.22,1,.36,1) ' + (idx * 80) + 'ms both">' +
+        '<div class="stat-icon" style="background:' + s.color + '18;border:1px solid ' + s.color + '30">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + s.color + '" stroke-width="2">' + s.icon + '</svg>' +
+        '</div>' +
+        '<div class="stat-label">' + s.label + '</div>' +
+        '<div class="stat-value">' + (stats[s.key] || 0) + '</div>' +
+      '</div>'
+    }).join('')
+
+    const STATUS_BADGE = { 'Disponible': 'available', 'Vendido': 'sold', 'Próximo Ingreso': 'upcoming' }
+    document.getElementById('dashboard-table').innerHTML = (vehicles.data || []).map(function (v, idx) {
+      return '<tr style="animation:fadeUp .3s ease ' + (idx * 35) + 'ms both">' +
+        '<td style="color:var(--white)">' + v.brand + ' ' + v.model + ' ' + v.year + '</td>' +
+        '<td class="col-hide">' + RAB.price(v.price) + '</td>' +
+        '<td class="col-hide" style="color:rgba(255,255,255,.5)">' + v.category + '</td>' +
+        '<td><span class="card-badge badge-' + (STATUS_BADGE[v.status] || 'available') + '" style="position:static">' + v.status + '</span></td>' +
+        '<td style="text-align:right"><button onclick="showPage(\'vehicles\');editVehicle(\'' + v.id + '\')" style="color:var(--blue-light);font-size:12px;background:none;border:none;cursor:pointer">Editar</button></td>' +
+      '</tr>'
+    }).join('')
+  } catch (e) { RAB.toast('Error cargando dashboard', 'error') }
+}
+
+/* ══ VEHICLES ══════════════════════════════════════════════ */
+var allVehicles = []
+
+async function loadVehiclesTable() {
+  try {
+    const { data, count } = await RAB.api('/api/vehicles/all?page=0&limit=100')
+    allVehicles = data
+    document.getElementById('vehicle-total').textContent = count + ' vehículos en total'
+    const STATUS_BADGE = { 'Disponible': 'available', 'Vendido': 'sold', 'Próximo Ingreso': 'upcoming' }
+    document.getElementById('vehicles-table').innerHTML = data.map(function (v, idx) {
+      return '<tr style="animation:fadeUp .3s ease ' + (idx * 25) + 'ms both">' +
+        '<td style="color:var(--white)">' + v.brand + ' ' + v.model + ' ' + v.year + '</td>' +
+        '<td class="col-hide">' + RAB.price(v.price) + '</td>' +
+        '<td class="col-hide" style="color:rgba(255,255,255,.5)">' + v.category + '</td>' +
+        '<td><span class="card-badge badge-' + (STATUS_BADGE[v.status] || 'available') + '" style="position:static">' + v.status + '</span></td>' +
+        '<td>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+            '<button onclick="editVehicle(\'' + v.id + '\')" style="color:var(--blue-light);font-size:12px;background:none;border:none;cursor:pointer;white-space:nowrap">Editar</button>' +
+            '<button onclick="deleteVehicle(\'' + v.id + '\',\'' + v.brand + ' ' + v.model + '\')" style="color:#f87171;font-size:12px;background:none;border:none;cursor:pointer;white-space:nowrap">Eliminar</button>' +
+          '</div>' +
+        '</td>' +
+      '</tr>'
+    }).join('')
+  } catch (e) { RAB.toast('Error cargando vehículos', 'error') }
+}
+
+/* ── Form ── */
+var currentVehicleId = null
+
+function openForm(v) {
+  v = v || null
+  var wrap = document.getElementById('vehicle-form-wrap')
+  wrap.style.animation = 'none'
+  wrap.offsetHeight
+  wrap.style.animation = 'fadeUp .35s cubic-bezier(.22,1,.36,1) both'
+  wrap.style.display = 'block'
+  document.getElementById('image-section').style.display = 'none'
+  document.getElementById('img-preview-grid').innerHTML      = ''
+  currentVehicleId = v ? v.id : null
+  document.getElementById('form-title').textContent     = v ? (v.brand + ' ' + v.model + ' ' + v.year) : 'Nuevo vehículo'
+  document.getElementById('f-id').value                 = v ? v.id : ''
+  document.getElementById('f-brand').value              = v ? v.brand : ''
+  document.getElementById('f-model').value              = v ? v.model : ''
+  document.getElementById('f-year').value               = v ? v.year : new Date().getFullYear()
+  document.getElementById('f-price').value              = v ? v.price : ''
+  document.getElementById('f-mileage').value            = v ? v.mileage : 0
+  document.getElementById('f-category').value           = v ? v.category : 'Sedán'
+  document.getElementById('f-transmission').value       = v ? v.transmission : 'Automático'
+  document.getElementById('f-fuel').value               = v ? v.fuel : 'Bencina'
+  document.getElementById('f-status').value             = v ? v.status : 'Disponible'
+  document.getElementById('f-desc').value               = v ? (v.description || '') : ''
+  document.getElementById('f-featured').checked         = v ? (v.featured || false) : false
+  if (v) {
+    document.getElementById('image-section').style.display = 'block'
+    renderExistingImages(v.vehicle_images || [])
+  }
+  document.getElementById('vehicle-form-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function closeForm() {
+  document.getElementById('vehicle-form-wrap').style.display = 'none'
+  currentVehicleId = null
+}
+
+function editVehicle(id) {
+  const v = allVehicles.find(function (x) { return x.id === id })
+  if (v) openForm(v)
+}
+
+async function saveVehicle(e) {
+  e.preventDefault()
+  const btn = document.getElementById('form-save-btn')
+  var id = document.getElementById('f-id').value
+  btn.disabled = true; btn.textContent = 'Guardando...'
+  showGlobalLoading(id ? 'Actualizando vehículo...' : 'Creando vehículo...')
+  const payload = {
+    brand:        RAB.capitalize(document.getElementById('f-brand').value),
+    model:        RAB.capitalize(document.getElementById('f-model').value),
+    year:         +document.getElementById('f-year').value,
+    price:        +document.getElementById('f-price').value,
+    mileage:      +document.getElementById('f-mileage').value,
+    category:     document.getElementById('f-category').value,
+    transmission: document.getElementById('f-transmission').value,
+    fuel:         document.getElementById('f-fuel').value,
+    status:       document.getElementById('f-status').value,
+    description:  document.getElementById('f-desc').value,
+    featured:     document.getElementById('f-featured').checked,
+  }
+  try {
+    if (id) {
+      await RAB.api('/api/vehicles/' + id, { method: 'PUT', body: JSON.stringify(payload) })
+      RAB.toast('Vehículo actualizado')
+    } else {
+      const { data } = await RAB.api('/api/vehicles', { method: 'POST', body: JSON.stringify(payload) })
+      id = data.id
+      document.getElementById('f-id').value = id
+      currentVehicleId = id
+      RAB.toast('Vehículo creado — ahora puedes subir fotos')
+    }
+    document.getElementById('image-section').style.display = 'block'
+    loadVehiclesTable()
+  } catch (err) { RAB.toast(err.message, 'error') }
+  finally {
+    hideGlobalLoading()
+    btn.disabled = false; btn.textContent = 'Guardar vehículo'
+  }
+}
+
+async function deleteVehicle(id, name) {
+  if (!confirm('¿Eliminar "' + name + '"? Esta acción no se puede deshacer.')) return
+  try {
+    await RAB.api('/api/vehicles/' + id, { method: 'DELETE' })
+    RAB.toast('Vehículo eliminado')
+    loadVehiclesTable()
+  } catch (e) { RAB.toast(e.message, 'error') }
+}
+
+/* ══ IMAGES ════════════════════════════════════════════════ */
+var existingImages = []
+
+function renderExistingImages(imgs) {
+  existingImages = imgs.sort(function (a, b) { return (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0) })
+  document.getElementById('img-preview-grid').innerHTML = existingImages.map(function (img) {
+    return '<div class="img-preview ' + (img.is_cover ? 'cover' : '') + '" id="img-' + img.id + '">' +
+      '<img src="' + img.public_url + '" alt="">' +
+      (img.is_cover ? '<span class="cover-label">Portada</span>' : '') +
+      '<div class="img-preview-actions">' +
+        (!img.is_cover ? '<button onclick="setCover(\'' + img.id + '\')" title="Portada" style="background:var(--navy-light);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;border:none;cursor:pointer">★</button>' : '') +
+        '<button onclick="deleteImage(\'' + img.id + '\')" title="Eliminar" style="background:rgba(180,30,30,.8);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;border:none;cursor:pointer">✕</button>' +
+      '</div>' +
+    '</div>'
+  }).join('')
+}
+
+async function uploadImages(files) {
+  var id = currentVehicleId || document.getElementById('f-id').value
+  if (!id) { RAB.toast('Guarda el vehículo primero', 'error'); return }
+  var errEl = document.getElementById('img-error')
+  errEl.style.display = 'none'
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i]
+    if (file.size > 8 * 1024 * 1024) { errEl.textContent = '"' + file.name + '" supera 8MB'; errEl.style.display = 'block'; continue }
+    ;(function (f) {
+      var reader = new FileReader()
+      reader.onload = async function (ev) {
+        var base64 = ev.target.result.split(',')[1]
+        try {
+          var isFirst = existingImages.length === 0
+          var result  = await RAB.api('/api/admin/upload/' + id, {
+            method: 'POST',
+            body: JSON.stringify({ base64: base64, contentType: f.type, fileName: f.name, isCover: isFirst })
+          })
+          existingImages.push(result.data)
+          renderExistingImages(existingImages)
+          RAB.toast('Imagen subida')
+        } catch (e) { errEl.textContent = e.message; errEl.style.display = 'block' }
+      }
+      reader.readAsDataURL(f)
+    })(file)
+  }
+}
+
+async function setCover(imgId) {
+  var id = currentVehicleId || document.getElementById('f-id').value
+  try {
+    await RAB.api('/api/admin/image/' + imgId + '/cover', { method: 'PUT', body: JSON.stringify({ vehicleId: id }) })
+    existingImages = existingImages.map(function (i) { return Object.assign({}, i, { is_cover: i.id === imgId }) })
+    renderExistingImages(existingImages)
+  } catch (e) { RAB.toast(e.message, 'error') }
+}
+
+async function deleteImage(imgId) {
+  if (!confirm('¿Eliminar esta imagen?')) return
+  try {
+    await RAB.api('/api/admin/image/' + imgId, { method: 'DELETE' })
+    existingImages = existingImages.filter(function (i) { return i.id !== imgId })
+    renderExistingImages(existingImages)
+    RAB.toast('Imagen eliminada')
+  } catch (e) { RAB.toast(e.message, 'error') }
+}
+
+// Drop zone
+var dz = document.getElementById('drop-zone')
+dz.addEventListener('dragover',  function (e) { e.preventDefault(); dz.classList.add('drag') })
+dz.addEventListener('dragleave', function ()  { dz.classList.remove('drag') })
+dz.addEventListener('drop',      function (e) { e.preventDefault(); dz.classList.remove('drag'); uploadImages(e.dataTransfer.files) })
+
+/* ══ WASHING PLANS ═════════════════════════════════════════ */
+var WASH_SIZES = [
+  'Auto / Hatchback',
+  'SUV / Crossover',
+  'Extra Grande (SUV XL / Station)',
+  'Super Grande (Pickup / Camioneta)',
+]
+var washingPlans = []
+
+async function loadWashingPlans() {
+  document.getElementById('washing-loading').style.display = 'block'
+  document.getElementById('washing-plans-forms').style.display = 'none'
+  try {
+    washingPlans = await RAB.api('/api/admin/wash-plans')
+    if (!washingPlans || !washingPlans.length) {
+      document.getElementById('washing-loading').innerHTML = '<p style="color:rgba(255,255,255,.3);font-size:13px">No se encontraron planes en la base de datos.</p>'
+      return
+    }
+    renderWashingForms()
+    document.getElementById('washing-loading').style.display = 'none'
+    document.getElementById('washing-plans-forms').style.display = 'block'
+  } catch (e) { RAB.toast('Error cargando planes de lavado', 'error') }
+}
+
+function renderWashingForms() {
+  var sorted = washingPlans.slice().sort(function (a, b) { return a.sort_order - b.sort_order })
+  document.getElementById('washing-plans-forms').innerHTML = sorted.map(function (plan, idx) {
+    var isPremium = !!plan.recommended
+    var pricesHtml = WASH_SIZES.map(function (size) {
+      var existing = (plan.prices || []).find(function (p) { return p.size === size })
+      return '<div class="form-group">' +
+        '<label class="form-label">' + size + '</label>' +
+        '<input type="number" class="form-input wash-price-inp" ' +
+          'data-plan-id="' + plan.id + '" data-size="' + size.replace(/"/g, '&quot;') + '" ' +
+          'value="' + (existing ? existing.price : '') + '" min="0" placeholder="0" inputmode="numeric">' +
+      '</div>'
+    }).join('')
+
+    return '<div class="form-section" style="margin-bottom:1.5rem;animation:fadeUp .4s cubic-bezier(.22,1,.36,1) ' + (idx * 120) + 'ms both">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">' +
+        '<h2 class="form-section-title" style="margin-bottom:0">' + plan.title + '</h2>' +
+        (isPremium ? '<div class="badge-recommended" style="animation:none"><div class="badge-dot" style="animation:none"></div>Recomendado</div>' : '') +
+      '</div>' +
+      '<div class="form-group" style="margin-bottom:1.25rem">' +
+        '<label class="form-label">Descripción del plan</label>' +
+        '<input type="text" class="form-input" id="subtitle-' + plan.id + '" value="' + (plan.subtitle || '').replace(/"/g, '&quot;') + '" placeholder="Descripción corta del plan...">' +
+      '</div>' +
+      '<p class="form-label" style="margin-bottom:.75rem">Precios por tamaño de vehículo</p>' +
+      '<div class="form-grid" style="margin-bottom:1.5rem">' + pricesHtml + '</div>' +
+      '<p class="form-label" style="margin-bottom:.75rem">Características incluidas</p>' +
+      '<div id="features-wrap-' + plan.id + '" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:.75rem;min-height:32px">' +
+        renderFeaturesHtml(plan) +
+      '</div>' +
+      '<div style="display:flex;gap:.5rem;margin-bottom:1.5rem">' +
+        '<input type="text" class="form-input" id="feature-input-' + plan.id + '" ' +
+          'placeholder="Ej: Lavado exterior detallado" style="max-width:320px" ' +
+          'onkeydown="if(event.key===\'Enter\'){event.preventDefault();addWashFeature(\'' + plan.id + '\')}">' +
+        '<button type="button" onclick="addWashFeature(\'' + plan.id + '\')" ' +
+          'class="btn-primary" style="font-size:12px;padding:8px 14px;white-space:nowrap">+ Agregar</button>' +
+      '</div>' +
+      '<button type="button" onclick="saveWashingPlan(\'' + plan.id + '\')" class="btn-primary">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>' +
+        ' Guardar cambios' +
+      '</button>' +
+    '</div>'
+  }).join('')
+}
+
+function renderFeaturesHtml(plan) {
+  if (!plan.features || !plan.features.length) {
+    return '<span style="font-size:12px;color:rgba(255,255,255,.2)">Sin características — agrega una arriba</span>'
+  }
+  var planId = plan.id
+  return plan.features.map(function (f, i) {
+    return '<span class="wash-admin-feature">' + f +
+      '<button type="button" onclick="removeWashFeature(\'' + planId + '\',' + i + ')" ' +
+        'title="Eliminar" style="background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;padding:0 0 0 4px;font-size:16px;line-height:1">×</button>' +
+    '</span>'
+  }).join('')
+}
+
+function addWashFeature(planId) {
+  var input = document.getElementById('feature-input-' + planId)
+  var val = input.value.trim()
+  if (!val) return
+  var plan = washingPlans.find(function (p) { return p.id === planId })
+  if (!plan) return
+  plan.features = (plan.features || []).concat([val])
+  input.value = ''
+  document.getElementById('features-wrap-' + planId).innerHTML = renderFeaturesHtml(plan)
+}
+
+function removeWashFeature(planId, idx) {
+  var plan = washingPlans.find(function (p) { return p.id === planId })
+  if (!plan) return
+  plan.features = plan.features.filter(function (_, i) { return i !== idx })
+  document.getElementById('features-wrap-' + planId).innerHTML = renderFeaturesHtml(plan)
+}
+
+async function saveWashingPlan(planId) {
+  var plan = washingPlans.find(function (p) { return p.id === planId })
+  if (!plan) return
+  var prices = WASH_SIZES.map(function (size) {
+    var inp = document.querySelector('.wash-price-inp[data-plan-id="' + planId + '"][data-size="' + size + '"]')
+    return { size: size, price: inp ? (+inp.value || 0) : 0 }
+  }).filter(function (p) { return p.price > 0 })
+  var subtitle = document.getElementById('subtitle-' + planId).value.trim()
+  var payload = { subtitle: subtitle, prices: prices, features: plan.features || [] }
+  showGlobalLoading('Guardando cambios...')
+  try {
+    await RAB.api('/api/admin/wash-plans/' + planId, { method: 'PUT', body: JSON.stringify(payload) })
+    plan.subtitle = subtitle
+    plan.prices = prices
+    RAB.toast('Plan "' + plan.title + '" actualizado')
+  } catch (e) { RAB.toast(e.message, 'error') }
+  finally { hideGlobalLoading() }
+}
+
+/* ══ GLOBAL LOADING ════════════════════════════════════════ */
+function showGlobalLoading(text) {
+  var el = document.getElementById('global-loading')
+  el.querySelector('.gl-text').textContent = text || 'Procesando...'
+  el.classList.add('active')
+}
+function hideGlobalLoading() {
+  document.getElementById('global-loading').classList.remove('active')
+}
+
+/* ══ SESSION GUARD ═════════════════════════════════════════ */
+var _sessionExpired = false
+document.addEventListener('rab:unauthorized', function () {
+  if (_sessionExpired) return
+  _sessionExpired = true
+  RAB.toast('Tu sesión ha expirado. Inicia sesión nuevamente.', 'error')
+  setTimeout(function () { location.reload() }, 2200)
+})
+
+/* ══ INIT ══════════════════════════════════════════════════ */
+function initAdmin() { loadDashboard() }
+
+if (getToken()) {
+  document.getElementById('login-screen').style.display = 'none'
+  document.getElementById('admin-app').style.display    = 'block'
+  initAdmin()
+}
+</script>
+</body>
+</html>
