@@ -389,7 +389,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   color: var(--white); font-size: 13px; font-family: inherit;
   transition: border-color .2s; outline: none; width: 100%;
 }
-.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--navy-light); }
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(62,159,203,.16); }
 .form-select option { background: #141B26; }
 .form-textarea { resize: vertical; min-height: 80px; }
 
