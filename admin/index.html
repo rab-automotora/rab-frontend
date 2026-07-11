@@ -138,7 +138,7 @@
       animation:spin .7s linear infinite;
     }
     #global-loading .gl-text {
-      font-family:var(--font-title); font-weight:600; font-size:13px;
+      font-family:var(--font-body); font-weight:600; font-size:13px;
       color:rgba(255,255,255,.4); letter-spacing:.06em; text-transform:uppercase;
     }
   </style>
@@ -258,7 +258,7 @@
 
       <div class="admin-table-wrap">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.06);flex-wrap:wrap;gap:.5rem">
-          <span style="font-family:var(--font-title);font-weight:700;color:var(--white);font-size:13px">Inventario reciente</span>
+          <span style="font-family:var(--font-body);font-weight:700;color:var(--white);font-size:13px">Inventario reciente</span>
           <button onclick="showPage('vehicles');openForm()" class="btn-primary" style="font-size:11px;padding:6px 14px">+ Agregar</button>
         </div>
         <div class="table-scroll">
@@ -336,8 +336,8 @@
 
         <!-- Imágenes -->
         <div id="image-section" style="display:none" class="form-section">
-          <h2 class="form-section-title">Imágenes del vehículo</h2>
-          <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:1rem">Sube fotos del vehículo. La primera imagen o la que marques será la portada.</p>
+          <h2 class="form-section-title" id="image-section-title">Imágenes del vehículo *</h2>
+          <p id="image-hint" style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:1rem">Agrega al menos una foto. La primera o la que marques será la portada.</p>
           <div class="drop-zone" id="drop-zone">
             <input type="file" id="img-input" multiple accept="image/*" onchange="uploadImages(this.files)">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5" style="margin:0 auto .75rem;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -534,8 +534,10 @@ function openForm(v) {
   wrap.offsetHeight
   wrap.style.animation = 'fadeUp .35s cubic-bezier(.22,1,.36,1) both'
   wrap.style.display = 'block'
-  document.getElementById('image-section').style.display = 'none'
+  document.getElementById('image-section').style.display = 'block'
   document.getElementById('img-preview-grid').innerHTML      = ''
+  document.getElementById('img-error').style.display         = 'none'
+  stagedImages = []
   currentVehicleId = v ? v.id : null
   document.getElementById('form-title').textContent     = v ? (v.brand + ' ' + v.model + ' ' + v.year) : 'Nuevo vehículo'
   document.getElementById('f-id').value                 = v ? v.id : ''
@@ -551,8 +553,11 @@ function openForm(v) {
   document.getElementById('f-desc').value               = v ? (v.description || '') : ''
   document.getElementById('f-featured').checked         = v ? (v.featured || false) : false
   if (v) {
-    document.getElementById('image-section').style.display = 'block'
+    document.getElementById('image-hint').textContent = 'Sube más fotos del vehículo. La que marques será la portada.'
     renderExistingImages(v.vehicle_images || [])
+  } else {
+    document.getElementById('image-hint').textContent = 'Agrega al menos una foto. La primera o la que marques será la portada.'
+    renderStagedImages()
   }
   document.getElementById('vehicle-form-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
@@ -571,6 +576,14 @@ async function saveVehicle(e) {
   e.preventDefault()
   const btn = document.getElementById('form-save-btn')
   var id = document.getElementById('f-id').value
+
+  // Foto obligatoria al crear un vehículo nuevo
+  if (!id && stagedImages.length === 0) {
+    showImgError('Debes agregar al menos una foto del vehículo')
+    document.getElementById('image-section').scrollIntoView({ behavior: 'smooth', block: 'center' })
+    return
+  }
+
   btn.disabled = true; btn.textContent = 'Guardando...'
   showGlobalLoading(id ? 'Actualizando vehículo...' : 'Creando vehículo...')
   const payload = {
@@ -591,13 +604,20 @@ async function saveVehicle(e) {
       await RAB.api('/api/vehicles/' + id, { method: 'PUT', body: JSON.stringify(payload) })
       RAB.toast('Vehículo actualizado')
     } else {
+      payload.images = stagedImages.map(function (img) {
+        return { base64: img.base64, contentType: img.contentType, fileName: img.fileName, isCover: img.isCover }
+      })
       const { data } = await RAB.api('/api/vehicles', { method: 'POST', body: JSON.stringify(payload) })
+      // Pasar a modo edición del vehículo recién creado (fotos ya subidas)
       id = data.id
       document.getElementById('f-id').value = id
       currentVehicleId = id
-      RAB.toast('Vehículo creado — ahora puedes subir fotos')
+      document.getElementById('form-title').textContent = data.brand + ' ' + data.model + ' ' + data.year
+      document.getElementById('image-hint').textContent = 'Sube más fotos del vehículo. La que marques será la portada.'
+      stagedImages = []
+      renderExistingImages(data.vehicle_images || [])
+      RAB.toast('Vehículo creado con sus fotos')
     }
-    document.getElementById('image-section').style.display = 'block'
     loadVehiclesTable()
   } catch (err) { RAB.toast(err.message, 'error') }
   finally {
@@ -617,6 +637,63 @@ async function deleteVehicle(id, name) {
 
 /* ══ IMAGES ════════════════════════════════════════════════ */
 var existingImages = []
+var stagedImages   = []   // fotos en memoria antes de crear el vehículo
+
+function showImgError(msg) {
+  var errEl = document.getElementById('img-error')
+  errEl.textContent = msg
+  errEl.style.display = 'block'
+}
+
+/* ── Staging (vehículo nuevo, aún sin ID) ── */
+function stageImages(files) {
+  document.getElementById('img-error').style.display = 'none'
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i]
+    if (!/^image\//.test(file.type)) { showImgError('"' + file.name + '" no es una imagen'); continue }
+    if (file.size > 8 * 1024 * 1024) { showImgError('"' + file.name + '" supera 8MB'); continue }
+    ;(function (f) {
+      var reader = new FileReader()
+      reader.onload = function (ev) {
+        var dataUrl = ev.target.result
+        stagedImages.push({
+          dataUrl:     dataUrl,
+          base64:      dataUrl.split(',')[1],
+          contentType: f.type,
+          fileName:    f.name,
+          isCover:     stagedImages.length === 0,   // la primera es portada por defecto
+        })
+        renderStagedImages()
+      }
+      reader.readAsDataURL(f)
+    })(file)
+  }
+}
+
+function renderStagedImages() {
+  document.getElementById('img-preview-grid').innerHTML = stagedImages.map(function (img, idx) {
+    return '<div class="img-preview ' + (img.isCover ? 'cover' : '') + '">' +
+      '<img src="' + img.dataUrl + '" alt="">' +
+      (img.isCover ? '<span class="cover-label">Portada</span>' : '') +
+      '<div class="img-preview-actions">' +
+        (!img.isCover ? '<button type="button" onclick="setStagedCover(' + idx + ')" title="Portada" style="background:var(--navy-light);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;border:none;cursor:pointer">★</button>' : '') +
+        '<button type="button" onclick="removeStaged(' + idx + ')" title="Eliminar" style="background:rgba(180,30,30,.8);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;border:none;cursor:pointer">✕</button>' +
+      '</div>' +
+    '</div>'
+  }).join('')
+}
+
+function setStagedCover(idx) {
+  stagedImages = stagedImages.map(function (img, i) { return Object.assign({}, img, { isCover: i === idx }) })
+  renderStagedImages()
+}
+
+function removeStaged(idx) {
+  var wasCover = stagedImages[idx] && stagedImages[idx].isCover
+  stagedImages.splice(idx, 1)
+  if (wasCover && stagedImages.length) stagedImages[0].isCover = true
+  renderStagedImages()
+}
 
 function renderExistingImages(imgs) {
   existingImages = imgs.sort(function (a, b) { return (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0) })
@@ -634,7 +711,7 @@ function renderExistingImages(imgs) {
 
 async function uploadImages(files) {
   var id = currentVehicleId || document.getElementById('f-id').value
-  if (!id) { RAB.toast('Guarda el vehículo primero', 'error'); return }
+  if (!id) { stageImages(files); return }   // vehículo aún no creado → guardar en memoria
   var errEl = document.getElementById('img-error')
   errEl.style.display = 'none'
   for (var i = 0; i < files.length; i++) {

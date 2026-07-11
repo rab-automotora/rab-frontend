@@ -12,6 +12,8 @@
       padding: 7rem 1.5rem 1rem;
       border-bottom: 1px solid rgba(255,255,255,.05);
     }
+    /* La sección de filtros+cards va pegada al hero: sin el padding-top global */
+    .inventory-hero + .section { padding-top: 1.5rem; }
   </style>
 </head>
 <body>
@@ -20,8 +22,8 @@
 
 <section class="inventory-hero">
   <div class="container">
-    <p class="label-tag">Catálogo completo</p>
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-top:.4rem">
+    <p class="label-tag reveal">Catálogo completo</p>
+    <div class="reveal" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-top:.4rem;--reveal-delay:90ms">
       <div>
         <h1 style="font-family:var(--font-title);font-weight:900;font-size:clamp(2rem,4vw,3rem);color:var(--white)">Inventario</h1>
         <p id="vehicle-count" style="color:var(--text-muted);font-size:14px;margin-top:.25rem">Cargando...</p>
@@ -39,7 +41,7 @@
 
 <section class="section">
   <div class="container">
-    <div id="filters" class="filters"></div>
+    <div id="filters" class="filters reveal" style="--reveal-delay:160ms"></div>
     <div id="vehicles-grid" class="vehicles-grid"></div>
     <div id="load-more-wrap" style="text-align:center;margin-top:2rem;display:none">
       <button id="load-more-btn" onclick="loadMore()" class="btn-outline">Cargar más</button>
@@ -70,6 +72,9 @@
     btn.onclick = () => setFilter(cat)
     filtersEl.appendChild(btn)
   })
+
+  // Anima el contenido estático (hero + filtros) de inmediato, sin esperar la API
+  RAB.initReveal()
 
   function setFilter(cat) {
     currentCategory = cat
