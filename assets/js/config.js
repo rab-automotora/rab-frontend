@@ -266,7 +266,37 @@ const RAB = {
 
   // Vehicle card — rutas absolutas, sin parámetro base
   vehicleCard(v, idx) {
-    const cover = (v.vehicle_images || []).find(function (i) { return i.is_cover }) || (v.vehicle_images || [])[0]
+    const self = this
+    // Orden: portada primero, luego por sort_order. Máx 5 para el carrusel.
+    const imgs = (v.vehicle_images || []).slice().sort(function (a, b) {
+      var ca = a.is_cover ? 1 : 0, cb = b.is_cover ? 1 : 0
+      if (cb !== ca) return cb - ca
+      return (a.sort_order || 0) - (b.sort_order || 0)
+    })
+    const slides = imgs.slice(0, 5)
+
+    var mediaHtml, hoverAttrs = ''
+    if (!slides.length) {
+      mediaHtml = '<div class="card-img-placeholder">' + this.carSVG() + '<span style="font-size:12px">Sin foto</span></div>'
+    } else if (slides.length === 1) {
+      var only = slides[0]
+      mediaHtml = '<img src="' + this.imgUrl(only, 'thumb') + '"' +
+        (this.imgSrcset(only) ? ' srcset="' + this.imgSrcset(only) + '" sizes="(max-width:600px) 100vw, 400px"' : '') +
+        ' alt="' + v.brand + ' ' + v.model + '" loading="lazy" decoding="async">'
+    } else {
+      var slidesHtml = slides.map(function (im) {
+        return '<img class="card-slide" src="' + self.imgUrl(im, 'thumb') + '"' +
+          (self.imgSrcset(im) ? ' srcset="' + self.imgSrcset(im) + '" sizes="(max-width:600px) 100vw, 400px"' : '') +
+          ' alt="" loading="lazy" decoding="async">'
+      }).join('')
+      // Clon de la primera al final → el loop vuelve al inicio sin salto visible
+      slidesHtml += '<img class="card-slide" aria-hidden="true" src="' + self.imgUrl(slides[0], 'thumb') + '" alt="" loading="lazy" decoding="async">'
+      var dotsHtml = slides.map(function (_, i) { return '<span class="card-dot' + (i === 0 ? ' active' : '') + '"></span>' }).join('')
+      mediaHtml = '<div class="card-slider" data-count="' + slides.length + '">' + slidesHtml + '</div>' +
+                  '<div class="card-dots">' + dotsHtml + '</div>'
+      hoverAttrs = ' onmouseenter="RAB.cardHoverStart(this)" onmouseleave="RAB.cardHoverStop(this)"'
+    }
+
     const status = v.status || 'Disponible'
     const badgeMap = { 'Disponible': 'available', 'Vendido': 'sold', 'Próximo Ingreso': 'upcoming' }
     const badge = badgeMap[status] || 'available'
@@ -275,14 +305,10 @@ const RAB = {
     const delay = typeof idx === 'number' ? Math.min(idx, 5) * 70 : 0
 
     return '<div class="vehicle-card reveal" style="--reveal-delay:' + delay + 'ms">' +
-      '<a href="' + href + '" class="card-img">' +
-        (cover
-          ? '<img src="' + this.imgUrl(cover, 'thumb') + '"' +
-              (this.imgSrcset(cover) ? ' srcset="' + this.imgSrcset(cover) + '" sizes="(max-width:600px) 100vw, 400px"' : '') +
-              ' alt="' + v.brand + ' ' + v.model + '" loading="lazy" decoding="async">'
-          : '<div class="card-img-placeholder">' + this.carSVG() + '<span style="font-size:12px">Sin foto</span></div>') +
+      '<a href="' + href + '" class="card-img"' + hoverAttrs + '>' +
+        mediaHtml +
         '<span class="card-badge badge-' + badge + '">' + status + '</span>' +
-        (v.featured ? '<span class="badge-featured">Destacado</span>' : '') +
+        (v.featured ? '<span class="badge-featured"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 7.1-1.01L12 2z"/></svg>Destacado</span>' : '') +
       '</a>' +
       '<div class="card-body">' +
         '<a href="' + href + '" class="card-name">' + v.brand + ' ' + v.model + ' ' + v.year + '</a>' +
@@ -302,6 +328,44 @@ const RAB = {
         '</div>' +
       '</div>' +
     '</div>'
+  },
+
+  // ── Carrusel de la tarjeta: rota las fotos mientras el mouse está encima ──
+  cardHoverStart(cardImg) {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const slider = cardImg.querySelector('.card-slider')
+    if (!slider || slider._timer) return
+    const count = parseInt(slider.dataset.count, 10) || 0
+    if (count < 2) return
+    const dots = cardImg.querySelectorAll('.card-dot')
+    let idx = 0
+    const DUR = 560   // debe coincidir con la transición CSS
+    slider._timer = setInterval(function () {
+      idx++
+      slider.classList.remove('no-anim')
+      slider.style.transform = 'translateX(-' + (idx * 100) + '%)'
+      const real = idx % count
+      dots.forEach(function (d, i) { d.classList.toggle('active', i === real) })
+      if (idx === count) {
+        // llegamos al clon (= primera): al terminar la transición, saltar al inicio sin animar
+        setTimeout(function () {
+          if (!slider._timer) return
+          slider.classList.add('no-anim')
+          slider.style.transform = 'translateX(0)'
+          idx = 0
+        }, DUR)
+      }
+    }, 1400)
+  },
+  cardHoverStop(cardImg) {
+    const slider = cardImg.querySelector('.card-slider')
+    if (!slider) return
+    clearInterval(slider._timer)
+    slider._timer = null
+    slider.classList.add('no-anim')
+    slider.style.transform = 'translateX(0)'
+    cardImg.querySelectorAll('.card-dot').forEach(function (d, i) { d.classList.toggle('active', i === 0) })
+    requestAnimationFrame(function () { requestAnimationFrame(function () { slider.classList.remove('no-anim') }) })
   },
 
   // Ícono de Instagram (glifo oficial simplificado)

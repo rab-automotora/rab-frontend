@@ -948,11 +948,13 @@ async function uploadImages(files) {
 }
 
 async function setCover(imgId) {
-  var id = currentVehicleId || document.getElementById('f-id').value
+  // El backend deriva el vehículo desde la imagen y desmarca la portada anterior
+  // en una sola operación atómica — no hace falta enviar vehicleId ni tocar las otras.
   try {
-    await RAB.api('/api/admin/image/' + imgId + '/cover', { method: 'PUT', body: JSON.stringify({ vehicleId: id }) })
+    await RAB.api('/api/admin/image/' + imgId + '/cover', { method: 'PUT' })
     existingImages = existingImages.map(function (i) { return Object.assign({}, i, { is_cover: i.id === imgId }) })
     renderExistingImages(existingImages)
+    RAB.toast('Portada actualizada')
   } catch (e) { RAB.toast(e.message, 'error') }
 }
 
@@ -965,9 +967,15 @@ async function deleteImage(imgId) {
     cancelText: 'Cancelar',
   })
   if (!ok) return
+  var wasCover = (existingImages.find(function (i) { return i.id === imgId }) || {}).is_cover
   try {
     await RAB.api('/api/admin/image/' + imgId, { method: 'DELETE' })
     existingImages = existingImages.filter(function (i) { return i.id !== imgId })
+    // Si borramos la portada y quedan fotos, el backend promueve otra:
+    // reflejamos ese flag localmente para no quedar sin ninguna portada.
+    if (wasCover && existingImages.length && !existingImages.some(function (i) { return i.is_cover })) {
+      existingImages[0].is_cover = true
+    }
     renderExistingImages(existingImages)
     RAB.toast('Imagen eliminada')
   } catch (e) { RAB.toast(e.message, 'error') }

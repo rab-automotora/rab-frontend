@@ -181,7 +181,29 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   background: linear-gradient(135deg, var(--navy) 0%, rgba(62,159,203,.2) 100%);
 }
 .card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
-.vehicle-card:hover .card-img img { transform: scale(1.05); }
+.vehicle-card:hover .card-img > img { transform: scale(1.05); }
+
+/* Carrusel de fotos en hover (solo cuando hay ≥2 fotos) */
+.card-slider {
+  position: absolute; inset: 0; display: flex;
+  transition: transform .56s cubic-bezier(.5,0,.2,1);
+}
+.card-slider.no-anim { transition: none; }
+.vehicle-card:hover .card-slider { will-change: transform; }
+.card-slide { flex: 0 0 100%; width: 100%; height: 100%; object-fit: cover; }
+.vehicle-card:hover .card-img .card-slide { transform: none; }   /* evita doble movimiento con el zoom */
+.card-dots {
+  position: absolute; bottom: 8px; left: 0; right: 0; z-index: 2;
+  display: flex; justify-content: center; gap: 5px;
+  opacity: 0; transition: opacity .2s; pointer-events: none;
+}
+.vehicle-card:hover .card-dots { opacity: 1; }
+.card-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,.45); box-shadow: 0 0 4px rgba(0,0,0,.5);
+  transition: background .2s, transform .2s;
+}
+.card-dot.active { background: #fff; transform: scale(1.35); }
 .card-img-placeholder {
   width: 100%; height: 100%;
   display: flex; flex-direction: column;
@@ -191,21 +213,27 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .card-badge {
   position: absolute; top: 10px; left: 10px;
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 10px; font-weight: 600; letter-spacing: .03em;
+  font-size: 10px; font-weight: 700; letter-spacing: .03em;
   padding: 4px 9px; border-radius: 8px; border: 1px solid;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 2px 10px rgba(0,0,0,.3);
 }
-.card-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.badge-available { background: rgba(63,181,140,.14);  color: #74dcb5; border-color: rgba(63,181,140,.4); }
-.badge-sold      { background: rgba(138,146,155,.14); color: #c2cbd4; border-color: rgba(138,146,155,.35); }
-.badge-upcoming  { background: rgba(228,169,78,.14);  color: #e9b662; border-color: rgba(228,169,78,.38); }
+.card-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
+/* Fondo translúcido oscuro tintado por color → legible sobre fotos claras u oscuras */
+.badge-available { background: rgba(10,58,42,.62);  color: #7fe8c1; border-color: rgba(116,220,181,.5); }
+.badge-sold      { background: rgba(34,40,48,.64);  color: #d0d8df; border-color: rgba(194,203,212,.42); }
+.badge-upcoming  { background: rgba(74,50,10,.62);  color: #f1c26c; border-color: rgba(233,182,98,.5); }
 .badge-featured  {
   position: absolute; top: 10px; right: 10px;
-  background: rgba(228,169,78,.16); color: var(--gold);
-  border: 1px solid rgba(228,169,78,.34);
-  font-size: 10px; font-weight: 600; letter-spacing: .03em;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(74,50,10,.62); color: var(--gold);
+  border: 1px solid rgba(228,169,78,.5);
+  font-size: 10px; font-weight: 700; letter-spacing: .03em;
   padding: 4px 9px; border-radius: 8px;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 2px 10px rgba(0,0,0,.3);
 }
+.badge-featured svg { width: 11px; height: 11px; }
 .card-body { padding: 1rem; display: flex; flex-direction: column; flex: 1; }
 .card-name {
   font-family: var(--font-body); font-weight: 700;
