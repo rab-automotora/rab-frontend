@@ -113,7 +113,7 @@
       display:flex; justify-content:space-between; align-items:center;
       flex-wrap:wrap; gap:.75rem; margin-bottom:1.75rem;
     }
-    .page-header h1 { font-family:var(--font-title);font-weight:700;font-size:1.4rem;color:var(--white); }
+    .page-header h1 { font-family:var(--font-body);font-weight:800;font-size:1.4rem;color:var(--white); }
     .page-header p  { color:rgba(255,255,255,.35);font-size:13px;margin-top:3px; }
 
     /* ══ WASH ADMIN ═══════════════════════════════════════════ */
@@ -160,7 +160,7 @@
       <p style="color:rgba(255,255,255,.3);font-size:11px;text-transform:uppercase;letter-spacing:.3em">Panel de Administración</p>
     </div>
     <div class="login-card">
-      <h1 style="font-family:var(--font-title);font-weight:700;color:var(--white);font-size:1.1rem;margin-bottom:1.5rem">Iniciar sesión</h1>
+      <h1 style="font-family:var(--font-body);font-weight:800;color:var(--white);font-size:1.1rem;margin-bottom:1.5rem">Iniciar sesión</h1>
       <form id="login-form" onsubmit="doLogin(event)">
         <div class="form-group" style="margin-bottom:1rem">
           <label class="form-label">Email</label>
@@ -285,20 +285,24 @@
           <h1>Vehículos</h1>
           <p id="vehicle-total"></p>
         </div>
-        <button onclick="openForm()" class="btn-primary">+ Agregar</button>
+        <button id="btn-add-vehicle" onclick="openForm()" class="btn-primary">+ Agregar</button>
       </div>
 
-      <!-- Formulario -->
+      <!-- Formulario (un solo card: datos + imágenes + acciones al final) -->
       <div id="vehicle-form-wrap" style="display:none;margin-bottom:2rem">
-        <div class="form-section">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
-            <h2 class="form-section-title" id="form-title" style="margin-bottom:0">Nuevo vehículo</h2>
-            <button onclick="closeForm()" style="color:rgba(255,255,255,.4);display:flex;background:none;border:none;cursor:pointer">
+        <div class="form-section vehicle-form-card">
+          <div class="form-card-head">
+            <h2 class="form-section-title" id="form-title">Nuevo vehículo</h2>
+            <button type="button" onclick="closeForm()" class="form-card-close" aria-label="Cerrar">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
+
           <form id="vehicle-form" onsubmit="saveVehicle(event)">
             <input type="hidden" id="f-id">
+
+            <!-- Datos del vehículo -->
+            <p class="form-subhead">Datos del vehículo</p>
             <div class="form-grid">
               <div class="form-group"><label class="form-label">Marca *</label><input id="f-brand" class="form-input" required placeholder="Toyota"></div>
               <div class="form-group"><label class="form-label">Modelo *</label><input id="f-model" class="form-input" required placeholder="RAV4"></div>
@@ -322,48 +326,67 @@
                 <select id="f-status" class="form-select"><option>Disponible</option><option>Vendido</option><option>Próximo Ingreso</option></select>
               </div>
               <div class="form-group full"><label class="form-label">Descripción</label><textarea id="f-desc" class="form-textarea" placeholder="Detalles adicionales..."></textarea></div>
-              <div class="form-group" style="display:flex;align-items:center;gap:.5rem;padding-top:1rem">
-                <input id="f-featured" type="checkbox" style="width:16px;height:16px;accent-color:var(--navy-light)">
-                <label style="color:rgba(255,255,255,.6);font-size:13px;cursor:pointer" for="f-featured">Marcar como Destacado</label>
+              <div class="form-group full" style="padding-top:.25rem">
+                <label class="switch-field">
+                  <span class="switch">
+                    <input id="f-featured" type="checkbox">
+                    <span class="switch-slider"></span>
+                  </span>
+                  <span class="switch-text">Marcar como Destacado</span>
+                </label>
               </div>
             </div>
-            <div style="display:flex;gap:1rem;margin-top:1.5rem;flex-wrap:wrap">
+
+            <!-- Imágenes -->
+            <div id="image-section" class="form-subsection">
+              <p class="form-subhead" id="image-section-title" style="margin-bottom:.35rem">Imágenes del vehículo *</p>
+              <p id="image-hint" style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:1rem">Agrega al menos una foto. La primera o la que marques será la portada.</p>
+              <div class="drop-zone" id="drop-zone">
+                <input type="file" id="img-input" multiple accept="image/*" onchange="uploadImages(this.files)">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5" style="margin:0 auto .75rem;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <p style="color:rgba(255,255,255,.5);font-size:13px">Arrastra fotos o haz clic</p>
+                <p style="color:rgba(255,255,255,.25);font-size:11px;margin-top:4px">JPG, PNG, WEBP · Máx. 8 MB</p>
+              </div>
+              <div id="img-error" style="display:none;color:#fca5a5;font-size:12px;margin-top:.5rem"></div>
+              <div id="img-preview-grid" class="img-preview-grid"></div>
+            </div>
+
+            <!-- Acciones (al final) -->
+            <div class="form-actions">
+              <button type="button" onclick="closeForm()" class="btn-ghost">Cancelar</button>
               <button type="submit" id="form-save-btn" class="btn-primary">Guardar vehículo</button>
-              <button type="button" onclick="closeForm()" style="color:rgba(255,255,255,.4);font-size:13px;background:none;border:none;cursor:pointer">Cancelar</button>
             </div>
           </form>
         </div>
-
-        <!-- Imágenes -->
-        <div id="image-section" style="display:none" class="form-section">
-          <h2 class="form-section-title" id="image-section-title">Imágenes del vehículo *</h2>
-          <p id="image-hint" style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:1rem">Agrega al menos una foto. La primera o la que marques será la portada.</p>
-          <div class="drop-zone" id="drop-zone">
-            <input type="file" id="img-input" multiple accept="image/*" onchange="uploadImages(this.files)">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5" style="margin:0 auto .75rem;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <p style="color:rgba(255,255,255,.5);font-size:13px">Arrastra fotos o haz clic</p>
-            <p style="color:rgba(255,255,255,.25);font-size:11px;margin-top:4px">JPG, PNG, WEBP · Máx. 8 MB</p>
-          </div>
-          <div id="img-error" style="display:none;color:#fca5a5;font-size:12px;margin-top:.5rem"></div>
-          <div id="img-preview-grid" class="img-preview-grid"></div>
-        </div>
       </div>
 
-      <!-- Tabla -->
-      <div class="admin-table-wrap">
-        <div class="table-scroll">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Vehículo</th>
-                <th class="col-hide">Precio</th>
-                <th class="col-hide">Categoría</th>
-                <th>Estado</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="vehicles-table"></tbody>
-          </table>
+      <!-- Listado (se oculta al abrir el formulario de edición) -->
+      <div id="vehicles-list-view">
+        <!-- Barra de búsqueda -->
+        <div class="table-toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="vehicle-search" type="search" autocomplete="off" placeholder="Buscar marca, modelo, año, categoría o estado..." oninput="onVehicleSearch(this.value)">
+          </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="admin-table-wrap">
+          <div class="table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="vehicle" onclick="sortVehicles('vehicle')">Vehículo <span class="sort-ind"></span></th>
+                  <th class="sortable col-hide" data-sort="price" onclick="sortVehicles('price')">Precio <span class="sort-ind"></span></th>
+                  <th class="sortable col-hide" data-sort="category" onclick="sortVehicles('category')">Categoría <span class="sort-ind"></span></th>
+                  <th class="sortable" data-sort="status" onclick="sortVehicles('status')">Estado <span class="sort-ind"></span></th>
+                  <th class="sortable col-hide" data-sort="created_at" onclick="sortVehicles('created_at')">Ingreso <span class="sort-ind"></span></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="vehicles-table"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -388,6 +411,10 @@
 
 <script src="../assets/js/config.js"></script>
 <script>
+/* ══ ICONOS DE ACCIÓN ══════════════════════════════════════ */
+var ICON_EDIT  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'
+var ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+
 /* ══ SIDEBAR TOGGLE ════════════════════════════════════════ */
 function toggleSidebar() {
   const sb  = document.getElementById('admin-sidebar')
@@ -431,7 +458,7 @@ async function doLogin(e) {
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error)
-    localStorage.setItem('rab_token', data.access_token)
+    RAB.setSession(data)   // guarda access_token + refresh_token + expires_at
     document.getElementById('login-screen').style.display = 'none'
     document.getElementById('admin-app').style.display    = 'block'
     initAdmin()
@@ -443,7 +470,7 @@ async function doLogin(e) {
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Ingresar'
 }
 
-function doLogout() { localStorage.removeItem('rab_token'); location.reload() }
+function doLogout() { RAB.clearSession(); location.reload() }
 
 function togglePass() {
   const inp = document.getElementById('login-pass')
@@ -451,7 +478,24 @@ function togglePass() {
 }
 
 /* ══ PAGES ═════════════════════════════════════════════════ */
-function showPage(name) {
+async function showPage(name) {
+  // Guard: si hay un formulario de vehículo abierto y sales de esa página,
+  // confirmar antes de descartar cambios sin guardar.
+  var leavingVehicles = document.getElementById('page-vehicles').classList.contains('active')
+  var formOpen = document.getElementById('vehicle-form-wrap').style.display !== 'none'
+  if (leavingVehicles && name !== 'vehicles' && formOpen) {
+    if (isVehicleFormDirty()) {
+      var ok = await RAB.confirm({
+        danger: true,
+        title: 'Salir de la edición',
+        message: 'Tienes cambios sin guardar. Si sales de la edición, se perderán. ¿Deseas continuar?',
+        confirmText: 'Salir sin guardar',
+        cancelText: 'Seguir editando',
+      })
+      if (!ok) return
+    }
+    closeForm()
+  }
   document.querySelectorAll('.admin-page').forEach(function (p) { p.classList.remove('active') })
   document.querySelectorAll('.admin-nav-item').forEach(function (a) { a.classList.remove('active') })
   document.getElementById('page-' + name).classList.add('active')
@@ -462,8 +506,52 @@ function showPage(name) {
   if (name === 'washing')   loadWashingPlans()
 }
 
+/* ══ SKELETONS ═════════════════════════════════════════════ */
+// Filas de carga para la tabla admin. actions = nº de iconos; withDate = columna Ingreso.
+function tableSkeletonRows(count, actions, withDate) {
+  var acts = ''
+  for (var a = 0; a < (actions || 1); a++) {
+    acts += '<div class="skeleton" style="width:32px;height:32px;border-radius:8px"></div>'
+  }
+  var dateCell = withDate ? '<td class="col-hide"><div class="skeleton" style="width:74px;height:12px"></div></td>' : ''
+  var rows = ''
+  for (var j = 0; j < count; j++) {
+    rows += '<tr>' +
+      '<td><div class="skeleton" style="width:170px;height:12px"></div></td>' +
+      '<td class="col-hide"><div class="skeleton" style="width:80px;height:12px"></div></td>' +
+      '<td class="col-hide"><div class="skeleton" style="width:70px;height:12px"></div></td>' +
+      '<td><div class="skeleton" style="width:84px;height:22px;border-radius:20px"></div></td>' +
+      dateCell +
+      '<td><div style="display:flex;gap:8px;justify-content:flex-end">' + acts + '</div></td>' +
+    '</tr>'
+  }
+  return rows
+}
+
+// Fecha de creación legible (ej: "10 jul 2026")
+function fmtDate(iso) {
+  if (!iso) return '—'
+  var d = new Date(iso)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 /* ══ DASHBOARD ═════════════════════════════════════════════ */
+function renderDashboardSkeleton() {
+  var stat = ''
+  for (var i = 0; i < 4; i++) {
+    stat += '<div class="stat-card" style="border-color:rgba(255,255,255,.06);background:rgba(255,255,255,.02)">' +
+      '<div class="skeleton" style="width:32px;height:32px;border-radius:8px;margin-bottom:.75rem"></div>' +
+      '<div class="skeleton" style="width:55%;height:10px;margin-bottom:8px"></div>' +
+      '<div class="skeleton" style="width:38%;height:26px"></div>' +
+    '</div>'
+  }
+  document.getElementById('stats-grid').innerHTML = stat
+  document.getElementById('dashboard-table').innerHTML = tableSkeletonRows(5, 1)
+}
+
 async function loadDashboard() {
+  renderDashboardSkeleton()
   try {
     const [stats, vehicles] = await Promise.all([
       RAB.api('/api/admin/stats'),
@@ -492,40 +580,141 @@ async function loadDashboard() {
         '<td class="col-hide">' + RAB.price(v.price) + '</td>' +
         '<td class="col-hide" style="color:rgba(255,255,255,.5)">' + v.category + '</td>' +
         '<td><span class="card-badge badge-' + (STATUS_BADGE[v.status] || 'available') + '" style="position:static">' + v.status + '</span></td>' +
-        '<td style="text-align:right"><button onclick="showPage(\'vehicles\');editVehicle(\'' + v.id + '\')" style="color:var(--blue-light);font-size:12px;background:none;border:none;cursor:pointer">Editar</button></td>' +
+        '<td><div style="display:flex;justify-content:flex-end"><button class="icon-btn icon-btn-edit" data-tip="Editar" aria-label="Editar" onclick="showPage(\'vehicles\');editVehicle(\'' + v.id + '\')">' + ICON_EDIT + '</button></div></td>' +
       '</tr>'
     }).join('')
   } catch (e) { RAB.toast('Error cargando dashboard', 'error') }
 }
 
 /* ══ VEHICLES ══════════════════════════════════════════════ */
-var allVehicles = []
+var allVehicles  = []
+var vehicleCount = 0
+var vehicleSearch = ''
+var vehicleSort   = { key: 'created_at', dir: 'desc' }   // por defecto: más recientes primero
 
 async function loadVehiclesTable() {
+  document.getElementById('vehicle-total').textContent = 'Cargando vehículos...'
+  document.getElementById('vehicles-table').innerHTML = tableSkeletonRows(6, 2, true)
   try {
     const { data, count } = await RAB.api('/api/vehicles/all?page=0&limit=100')
-    allVehicles = data
-    document.getElementById('vehicle-total').textContent = count + ' vehículos en total'
-    const STATUS_BADGE = { 'Disponible': 'available', 'Vendido': 'sold', 'Próximo Ingreso': 'upcoming' }
-    document.getElementById('vehicles-table').innerHTML = data.map(function (v, idx) {
-      return '<tr style="animation:fadeUp .3s ease ' + (idx * 25) + 'ms both">' +
-        '<td style="color:var(--white)">' + v.brand + ' ' + v.model + ' ' + v.year + '</td>' +
-        '<td class="col-hide">' + RAB.price(v.price) + '</td>' +
-        '<td class="col-hide" style="color:rgba(255,255,255,.5)">' + v.category + '</td>' +
-        '<td><span class="card-badge badge-' + (STATUS_BADGE[v.status] || 'available') + '" style="position:static">' + v.status + '</span></td>' +
-        '<td>' +
-          '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-            '<button onclick="editVehicle(\'' + v.id + '\')" style="color:var(--blue-light);font-size:12px;background:none;border:none;cursor:pointer;white-space:nowrap">Editar</button>' +
-            '<button onclick="deleteVehicle(\'' + v.id + '\',\'' + v.brand + ' ' + v.model + '\')" style="color:#f87171;font-size:12px;background:none;border:none;cursor:pointer;white-space:nowrap">Eliminar</button>' +
-          '</div>' +
-        '</td>' +
-      '</tr>'
-    }).join('')
+    allVehicles  = data || []
+    vehicleCount = count || allVehicles.length
+    renderVehiclesTable(true)
   } catch (e) { RAB.toast('Error cargando vehículos', 'error') }
+}
+
+function onVehicleSearch(val) {
+  vehicleSearch = val || ''
+  renderVehiclesTable(false)
+}
+
+function sortVehicles(key) {
+  if (vehicleSort.key === key) {
+    vehicleSort.dir = vehicleSort.dir === 'asc' ? 'desc' : 'asc'
+  } else {
+    vehicleSort.key = key
+    // fecha y precio parten en descendente (más nuevo / más caro); texto ascendente
+    vehicleSort.dir = (key === 'created_at' || key === 'price') ? 'desc' : 'asc'
+  }
+  renderVehiclesTable(false)
+}
+
+function resetVehicleView() {
+  vehicleSearch = ''
+  vehicleSort = { key: 'created_at', dir: 'desc' }
+  var inp = document.getElementById('vehicle-search')
+  if (inp) inp.value = ''
+}
+
+function vehicleSortValue(v, key) {
+  switch (key) {
+    case 'vehicle':    return (v.brand + ' ' + v.model + ' ' + v.year).toLowerCase()
+    case 'price':      return Number(v.price) || 0
+    case 'category':   return (v.category || '').toLowerCase()
+    case 'status':     return (v.status || '').toLowerCase()
+    case 'created_at': return new Date(v.created_at).getTime() || 0
+  }
+  return ''
+}
+
+function updateSortIndicators() {
+  var ths = document.querySelectorAll('#page-vehicles thead th[data-sort]')
+  ths.forEach(function (th) {
+    var active = th.getAttribute('data-sort') === vehicleSort.key
+    th.classList.toggle('active', active)
+    var ind = th.querySelector('.sort-ind')
+    if (ind) ind.textContent = active ? (vehicleSort.dir === 'asc' ? '▲' : '▼') : '↕'
+  })
+}
+
+function renderVehiclesTable(animate) {
+  updateSortIndicators()
+  var q = vehicleSearch.trim().toLowerCase()
+  var list = allVehicles.filter(function (v) {
+    if (!q) return true
+    return (v.brand + ' ' + v.model + ' ' + v.year + ' ' + v.category + ' ' + v.status).toLowerCase().indexOf(q) !== -1
+  })
+
+  var key = vehicleSort.key
+  var dir = vehicleSort.dir === 'asc' ? 1 : -1
+  list.sort(function (a, b) {
+    var va = vehicleSortValue(a, key), vb = vehicleSortValue(b, key)
+    var cmp = (typeof va === 'number' && typeof vb === 'number')
+      ? va - vb
+      : String(va).localeCompare(String(vb), 'es')
+    if (cmp !== 0) return cmp * dir
+    // desempate estable: siempre más nuevo primero
+    return (new Date(b.created_at).getTime() || 0) - (new Date(a.created_at).getTime() || 0)
+  })
+
+  var totalEl = document.getElementById('vehicle-total')
+  totalEl.textContent = q
+    ? (list.length + ' de ' + vehicleCount + ' vehículos')
+    : (vehicleCount + ' vehículos en total')
+
+  if (!list.length) {
+    document.getElementById('vehicles-table').innerHTML =
+      '<tr><td colspan="6" style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.35);font-size:13px">' +
+        (q ? 'No se encontraron vehículos que coincidan con la búsqueda.' : 'No hay vehículos registrados todavía.') +
+      '</td></tr>'
+    return
+  }
+
+  var STATUS_BADGE = { 'Disponible': 'available', 'Vendido': 'sold', 'Próximo Ingreso': 'upcoming' }
+  document.getElementById('vehicles-table').innerHTML = list.map(function (v, idx) {
+    var anim = animate ? ' style="animation:fadeUp .3s ease ' + (idx * 25) + 'ms both"' : ''
+    return '<tr id="veh-row-' + v.id + '"' + anim + '>' +
+      '<td style="color:var(--white)">' + v.brand + ' ' + v.model + ' ' + v.year + '</td>' +
+      '<td class="col-hide">' + RAB.price(v.price) + '</td>' +
+      '<td class="col-hide" style="color:rgba(255,255,255,.5)">' + v.category + '</td>' +
+      '<td><span class="card-badge badge-' + (STATUS_BADGE[v.status] || 'available') + '" style="position:static">' + v.status + '</span></td>' +
+      '<td class="col-hide" style="color:rgba(255,255,255,.5);white-space:nowrap">' + fmtDate(v.created_at) + '</td>' +
+      '<td>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+          '<button class="icon-btn icon-btn-edit" data-tip="Editar" aria-label="Editar" onclick="editVehicle(\'' + v.id + '\')">' + ICON_EDIT + '</button>' +
+          '<button class="icon-btn icon-btn-danger" data-tip="Eliminar" aria-label="Eliminar" onclick="deleteVehicle(\'' + v.id + '\',\'' + (v.brand + ' ' + v.model).replace(/'/g, "\\'") + '\')">' + ICON_TRASH + '</button>' +
+        '</div>' +
+      '</td>' +
+    '</tr>'
+  }).join('')
 }
 
 /* ── Form ── */
 var currentVehicleId = null
+var formSnapshot = ''   // estado del formulario al abrirlo, para detectar cambios sin guardar
+
+function serializeVehicleForm() {
+  var ids = ['f-brand', 'f-model', 'f-year', 'f-price', 'f-mileage', 'f-category', 'f-transmission', 'f-fuel', 'f-status', 'f-desc']
+  var vals = ids.map(function (id) { return document.getElementById(id).value })
+  vals.push(document.getElementById('f-featured').checked ? '1' : '0')
+  vals.push('imgs:' + stagedImages.length)
+  return vals.join('|')
+}
+
+function isVehicleFormDirty() {
+  if (document.getElementById('vehicle-form-wrap').style.display === 'none') return false
+  return serializeVehicleForm() !== formSnapshot
+}
 
 function openForm(v) {
   v = v || null
@@ -534,6 +723,8 @@ function openForm(v) {
   wrap.offsetHeight
   wrap.style.animation = 'fadeUp .35s cubic-bezier(.22,1,.36,1) both'
   wrap.style.display = 'block'
+  document.getElementById('vehicles-list-view').style.display = 'none'   // oculta la tabla al editar
+  document.getElementById('btn-add-vehicle').style.display = 'none'      // oculta "+ Agregar" durante la edición
   document.getElementById('image-section').style.display = 'block'
   document.getElementById('img-preview-grid').innerHTML      = ''
   document.getElementById('img-error').style.display         = 'none'
@@ -559,11 +750,14 @@ function openForm(v) {
     document.getElementById('image-hint').textContent = 'Agrega al menos una foto. La primera o la que marques será la portada.'
     renderStagedImages()
   }
+  formSnapshot = serializeVehicleForm()   // referencia limpia recién abierto
   document.getElementById('vehicle-form-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 function closeForm() {
   document.getElementById('vehicle-form-wrap').style.display = 'none'
+  document.getElementById('vehicles-list-view').style.display = ''   // vuelve a mostrar la tabla
+  document.getElementById('btn-add-vehicle').style.display = ''      // restaura "+ Agregar"
   currentVehicleId = null
 }
 
@@ -600,6 +794,7 @@ async function saveVehicle(e) {
     featured:     document.getElementById('f-featured').checked,
   }
   try {
+    var savedId = id
     if (id) {
       await RAB.api('/api/vehicles/' + id, { method: 'PUT', body: JSON.stringify(payload) })
       RAB.toast('Vehículo actualizado')
@@ -608,17 +803,15 @@ async function saveVehicle(e) {
         return { base64: img.base64, contentType: img.contentType, fileName: img.fileName, isCover: img.isCover }
       })
       const { data } = await RAB.api('/api/vehicles', { method: 'POST', body: JSON.stringify(payload) })
-      // Pasar a modo edición del vehículo recién creado (fotos ya subidas)
-      id = data.id
-      document.getElementById('f-id').value = id
-      currentVehicleId = id
-      document.getElementById('form-title').textContent = data.brand + ' ' + data.model + ' ' + data.year
-      document.getElementById('image-hint').textContent = 'Sube más fotos del vehículo. La que marques será la portada.'
+      savedId = data.id
       stagedImages = []
-      renderExistingImages(data.vehicle_images || [])
+      resetVehicleView()   // limpia búsqueda y ordena por fecha para ver el nuevo arriba
       RAB.toast('Vehículo creado con sus fotos')
     }
-    loadVehiclesTable()
+    // Volver al listado y destacar el vehículo afectado
+    closeForm()
+    await loadVehiclesTable()
+    highlightVehicleRow(savedId)
   } catch (err) { RAB.toast(err.message, 'error') }
   finally {
     hideGlobalLoading()
@@ -626,8 +819,25 @@ async function saveVehicle(e) {
   }
 }
 
+function highlightVehicleRow(id) {
+  var row = document.getElementById('veh-row-' + id)
+  if (!row) return
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  row.classList.remove('row-highlight')
+  void row.offsetWidth   // reinicia la animación si se destaca de nuevo
+  row.classList.add('row-highlight')
+  setTimeout(function () { row.classList.remove('row-highlight') }, 3600)
+}
+
 async function deleteVehicle(id, name) {
-  if (!confirm('¿Eliminar "' + name + '"? Esta acción no se puede deshacer.')) return
+  var ok = await RAB.confirm({
+    danger: true,
+    title: 'Eliminar vehículo',
+    message: 'Se eliminará "' + name + '" y todas sus fotos. Esta acción no se puede deshacer.',
+    confirmText: 'Eliminar',
+    cancelText: 'Cancelar',
+  })
+  if (!ok) return
   try {
     await RAB.api('/api/vehicles/' + id, { method: 'DELETE' })
     RAB.toast('Vehículo eliminado')
@@ -699,7 +909,7 @@ function renderExistingImages(imgs) {
   existingImages = imgs.sort(function (a, b) { return (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0) })
   document.getElementById('img-preview-grid').innerHTML = existingImages.map(function (img) {
     return '<div class="img-preview ' + (img.is_cover ? 'cover' : '') + '" id="img-' + img.id + '">' +
-      '<img src="' + img.public_url + '" alt="">' +
+      '<img src="' + RAB.imgUrl(img, 'thumb') + '" alt="" loading="lazy" decoding="async">' +
       (img.is_cover ? '<span class="cover-label">Portada</span>' : '') +
       '<div class="img-preview-actions">' +
         (!img.is_cover ? '<button onclick="setCover(\'' + img.id + '\')" title="Portada" style="background:var(--navy-light);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;border:none;cursor:pointer">★</button>' : '') +
@@ -747,7 +957,14 @@ async function setCover(imgId) {
 }
 
 async function deleteImage(imgId) {
-  if (!confirm('¿Eliminar esta imagen?')) return
+  var ok = await RAB.confirm({
+    danger: true,
+    title: 'Eliminar imagen',
+    message: '¿Seguro que deseas eliminar esta foto del vehículo?',
+    confirmText: 'Eliminar',
+    cancelText: 'Cancelar',
+  })
+  if (!ok) return
   try {
     await RAB.api('/api/admin/image/' + imgId, { method: 'DELETE' })
     existingImages = existingImages.filter(function (i) { return i.id !== imgId })
@@ -800,34 +1017,52 @@ function renderWashingForms() {
       '</div>'
     }).join('')
 
-    return '<div class="form-section" style="margin-bottom:1.5rem;animation:fadeUp .4s cubic-bezier(.22,1,.36,1) ' + (idx * 120) + 'ms both">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">' +
-        '<h2 class="form-section-title" style="margin-bottom:0">' + plan.title + '</h2>' +
-        (isPremium ? '<div class="badge-recommended" style="animation:none"><div class="badge-dot" style="animation:none"></div>Recomendado</div>' : '') +
-      '</div>' +
-      '<div class="form-group" style="margin-bottom:1.25rem">' +
-        '<label class="form-label">Descripción del plan</label>' +
-        '<input type="text" class="form-input" id="subtitle-' + plan.id + '" value="' + (plan.subtitle || '').replace(/"/g, '&quot;') + '" placeholder="Descripción corta del plan...">' +
-      '</div>' +
-      '<p class="form-label" style="margin-bottom:.75rem">Precios por tamaño de vehículo</p>' +
-      '<div class="form-grid" style="margin-bottom:1.5rem">' + pricesHtml + '</div>' +
-      '<p class="form-label" style="margin-bottom:.75rem">Características incluidas</p>' +
-      '<div id="features-wrap-' + plan.id + '" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:.75rem;min-height:32px">' +
-        renderFeaturesHtml(plan) +
-      '</div>' +
-      '<div style="display:flex;gap:.5rem;margin-bottom:1.5rem">' +
-        '<input type="text" class="form-input" id="feature-input-' + plan.id + '" ' +
-          'placeholder="Ej: Lavado exterior detallado" style="max-width:320px" ' +
-          'onkeydown="if(event.key===\'Enter\'){event.preventDefault();addWashFeature(\'' + plan.id + '\')}">' +
-        '<button type="button" onclick="addWashFeature(\'' + plan.id + '\')" ' +
-          'class="btn-primary" style="font-size:12px;padding:8px 14px;white-space:nowrap">+ Agregar</button>' +
-      '</div>' +
-      '<button type="button" onclick="saveWashingPlan(\'' + plan.id + '\')" class="btn-primary">' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>' +
-        ' Guardar cambios' +
+    var subtitlePreview = (plan.subtitle || 'Sin descripción — haz clic para editar').replace(/</g, '&lt;')
+
+    return '<div class="wash-accordion" id="wash-panel-' + plan.id + '" style="animation:fadeUp .4s cubic-bezier(.22,1,.36,1) ' + (idx * 120) + 'ms both">' +
+      '<button type="button" class="wash-accordion-head" aria-expanded="false" onclick="toggleWashPanel(\'' + plan.id + '\')">' +
+        '<div class="wash-accordion-titles">' +
+          '<div class="wash-accordion-title-row">' +
+            '<span class="wash-accordion-title">' + plan.title + '</span>' +
+            (isPremium ? '<div class="badge-recommended" style="animation:none"><div class="badge-dot" style="animation:none"></div>Recomendado</div>' : '') +
+          '</div>' +
+          '<span class="wash-accordion-sub" id="wash-sub-' + plan.id + '">' + subtitlePreview + '</span>' +
+        '</div>' +
+        '<svg class="wash-accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
       '</button>' +
+      '<div class="wash-accordion-body"><div class="wash-accordion-inner"><div class="wash-accordion-content">' +
+        '<div class="form-group" style="margin-bottom:1.25rem">' +
+          '<label class="form-label">Descripción del plan</label>' +
+          '<input type="text" class="form-input" id="subtitle-' + plan.id + '" value="' + (plan.subtitle || '').replace(/"/g, '&quot;') + '" placeholder="Descripción corta del plan...">' +
+        '</div>' +
+        '<p class="form-label" style="margin-bottom:.75rem">Precios por tamaño de vehículo</p>' +
+        '<div class="form-grid" style="margin-bottom:1.5rem">' + pricesHtml + '</div>' +
+        '<p class="form-label" style="margin-bottom:.75rem">Características incluidas</p>' +
+        '<div id="features-wrap-' + plan.id + '" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:.75rem;min-height:32px">' +
+          renderFeaturesHtml(plan) +
+        '</div>' +
+        '<div style="display:flex;gap:.5rem;margin-bottom:1.5rem">' +
+          '<input type="text" class="form-input" id="feature-input-' + plan.id + '" ' +
+            'placeholder="Ej: Lavado exterior detallado" style="max-width:320px" ' +
+            'onkeydown="if(event.key===\'Enter\'){event.preventDefault();addWashFeature(\'' + plan.id + '\')}">' +
+          '<button type="button" onclick="addWashFeature(\'' + plan.id + '\')" ' +
+            'class="btn-primary" style="font-size:12px;padding:8px 14px;white-space:nowrap">+ Agregar</button>' +
+        '</div>' +
+        '<button type="button" onclick="saveWashingPlan(\'' + plan.id + '\')" class="btn-primary">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>' +
+          ' Guardar cambios' +
+        '</button>' +
+      '</div></div></div>' +
     '</div>'
   }).join('')
+}
+
+function toggleWashPanel(id) {
+  var el = document.getElementById('wash-panel-' + id)
+  if (!el) return
+  var open = el.classList.toggle('open')
+  var head = el.querySelector('.wash-accordion-head')
+  if (head) head.setAttribute('aria-expanded', String(open))
 }
 
 function renderFeaturesHtml(plan) {
@@ -875,6 +1110,8 @@ async function saveWashingPlan(planId) {
     await RAB.api('/api/admin/wash-plans/' + planId, { method: 'PUT', body: JSON.stringify(payload) })
     plan.subtitle = subtitle
     plan.prices = prices
+    var subEl = document.getElementById('wash-sub-' + planId)
+    if (subEl) subEl.textContent = subtitle || 'Sin descripción — haz clic para editar'
     RAB.toast('Plan "' + plan.title + '" actualizado')
   } catch (e) { RAB.toast(e.message, 'error') }
   finally { hideGlobalLoading() }
@@ -902,11 +1139,23 @@ document.addEventListener('rab:unauthorized', function () {
 /* ══ INIT ══════════════════════════════════════════════════ */
 function initAdmin() { loadDashboard() }
 
-if (getToken()) {
+function showAdminApp() {
   document.getElementById('login-screen').style.display = 'none'
   document.getElementById('admin-app').style.display    = 'block'
   initAdmin()
 }
+
+// Arranque: valida que el token siga vigente. Si venció pero hay refresh
+// token, renueva la sesión antes de mostrar el panel; si no, va al login.
+;(async function bootstrapAuth() {
+  if (!getToken()) return                       // sin sesión → login (visible por defecto)
+  if (RAB.hasValidSession()) { showAdminApp(); return }
+  if (RAB.getRefreshToken()) {
+    try { await RAB.refreshSession(); showAdminApp(); return }
+    catch (e) { /* refresh falló → cae al login */ }
+  }
+  RAB.clearSession()                            // token vencido y sin refresh válido → login
+})()
 </script>
 </body>
 </html>

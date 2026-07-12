@@ -51,6 +51,11 @@
           <div class="spinner" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
         </div>
         <div class="gallery-thumbs" id="gallery-thumbs"></div>
+        <!-- Descripción · bajo las fotos -->
+        <div id="detail-desc" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem 1.75rem;margin-top:1.25rem">
+          <p style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-bottom:.5rem">Descripción</p>
+          <p id="detail-desc-text" style="font-size:14px;color:rgba(255,255,255,.65);line-height:1.7"></p>
+        </div>
       </div>
       <!-- Info -->
       <div class="detail-info">
@@ -64,10 +69,6 @@
           <div class="detail-price-val" id="detail-price"></div>
         </div>
         <div class="specs-grid" id="specs-grid"></div>
-        <div id="detail-desc" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.25rem">
-          <p style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-bottom:.5rem">Descripción</p>
-          <p id="detail-desc-text" style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.7"></p>
-        </div>
         <div id="detail-cta"></div>
       </div>
     </div>
@@ -91,12 +92,15 @@
   const id = new URLSearchParams(location.search).get('id')
   let images = [], activeImg = 0
 
+  function preload(url) { if (url) { const im = new Image(); im.src = url } }
+
   function showImg(i) {
     activeImg = i
     const main = document.getElementById('gallery-main')
     const img  = images[i]
+    const srcset = RAB.imgSrcset(img)
     main.innerHTML = `
-      <img src="${img.public_url}" alt="">
+      <img src="${RAB.imgUrl(img, 'medium')}"${srcset ? ` srcset="${srcset}" sizes="(max-width:768px) 100vw, 560px"` : ''} alt="" decoding="async" fetchpriority="high">
       ${images.length > 1 ? `
         <button class="gallery-nav prev" onclick="showImg(${(i - 1 + images.length) % images.length})">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -107,6 +111,11 @@
         <span class="gallery-counter">${i + 1} / ${images.length}</span>` : ''}
     `
     document.querySelectorAll('.gallery-thumb').forEach((t, ti) => t.classList.toggle('active', ti === i))
+    // Precarga la imagen vecina (medium) para que la navegación sea fluida
+    if (images.length > 1) {
+      preload(RAB.imgUrl(images[(i + 1) % images.length], 'medium'))
+      preload(RAB.imgUrl(images[(i - 1 + images.length) % images.length], 'medium'))
+    }
   }
 
   async function load() {
@@ -124,7 +133,7 @@
         showImg(0)
         if (images.length > 1) {
           thumbs.innerHTML = images.map((img, i) =>
-            `<div class="gallery-thumb ${i === 0 ? 'active' : ''}" onclick="showImg(${i})"><img src="${img.public_url}" alt=""></div>`
+            `<div class="gallery-thumb ${i === 0 ? 'active' : ''}" onclick="showImg(${i})"><img src="${RAB.imgUrl(img, 'thumb')}" alt="" loading="lazy" decoding="async"></div>`
           ).join('')
         }
       } else {
