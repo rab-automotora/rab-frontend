@@ -55,6 +55,23 @@ const RAB = {
   // ─── Helpers ──────────────────────────────────────────────
   price(n) { return '$' + Number(n).toLocaleString('es-CL') },
 
+  // ─── Imágenes optimizadas (backend genera thumb/medium/full WebP) ──
+  // Devuelve la URL en el tamaño pedido ('thumb'|'medium'|'full') con
+  // fallback a public_url para fotos antiguas sin variantes.
+  imgUrl(img, size) {
+    if (!img) return ''
+    return img[size + '_url'] || img.public_url || ''
+  },
+  // srcset responsive con los tamaños disponibles; '' si no hay variantes.
+  imgSrcset(img) {
+    if (!img) return ''
+    var parts = []
+    if (img.thumb_url)  parts.push(img.thumb_url + ' 400w')
+    if (img.medium_url) parts.push(img.medium_url + ' 1280w')
+    if (img.full_url)   parts.push(img.full_url + ' 1920w')
+    return parts.join(', ')
+  },
+
   wa(msg) {
     const text = msg || 'Hola, quiero cotizar un vehículo en RAB Automotora.'
     return 'https://wa.me/' + this.WHATSAPP + '?text=' + encodeURIComponent(text)
@@ -71,15 +88,95 @@ const RAB = {
     '</a>'
   },
 
+  // ─── Sesión / tokens ──────────────────────────────────────
+  getToken()        { return localStorage.getItem('rab_token') },
+  getRefreshToken() { return localStorage.getItem('rab_refresh') },
+  getExpiresAt()    { return Number(localStorage.getItem('rab_expires') || 0) },
+
+  // Guarda la sesión completa devuelta por /login o /refresh.
+  // ⚠️ El refresh_token rota: siempre se reemplazan los dos tokens.
+  setSession(data) {
+    if (!data) return
+    if (data.access_token)  localStorage.setItem('rab_token',   data.access_token)
+    if (data.refresh_token) localStorage.setItem('rab_refresh', data.refresh_token)
+    if (data.expires_at)    localStorage.setItem('rab_expires', String(data.expires_at))
+  },
+  clearSession() {
+    localStorage.removeItem('rab_token')
+    localStorage.removeItem('rab_refresh')
+    localStorage.removeItem('rab_expires')
+  },
+
+  // Epoch (seg) de expiración del access_token: usa expires_at guardado y,
+  // como respaldo (sesiones antiguas), el claim 'exp' del propio JWT.
+  _tokenExp() {
+    const stored = this.getExpiresAt()
+    if (stored) return stored
+    const t = this.getToken()
+    if (!t) return 0
+    try {
+      const payload = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+      return payload.exp || 0
+    } catch (e) { return 0 }
+  },
+  // ¿El access_token venció o le quedan < 60s?
+  _tokenExpiringSoon() {
+    const exp = this._tokenExp()
+    if (!exp) return false
+    return (exp - 60) <= Math.floor(Date.now() / 1000)
+  },
+  // ¿Hay una sesión con token aún vigente?
+  hasValidSession() {
+    return !!this.getToken() && !this._tokenExpiringSoon()
+  },
+
+  // Renueva la sesión con el refresh_token. Single-flight: llamadas
+  // concurrentes comparten la misma promesa. Lanza error si /refresh falla.
+  _refreshPromise: null,
+  refreshSession() {
+    if (this._refreshPromise) return this._refreshPromise
+    const self = this
+    const refresh = this.getRefreshToken()
+    this._refreshPromise = (async function () {
+      try {
+        if (!refresh) throw new Error('sin refresh token')
+        const res = await fetch(self.API_URL + '/api/admin/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refresh })
+        })
+        if (!res.ok) {
+          self.clearSession()                 // refresh inválido → sesión terminada
+          const e = new Error('refresh falló'); e.status = res.status; throw e
+        }
+        self.setSession(await res.json())      // rota ambos tokens
+      } finally {
+        self._refreshPromise = null
+      }
+    })()
+    return this._refreshPromise
+  },
+
   async api(path, opts) {
     opts = opts || {}
-    const token = localStorage.getItem('rab_token')
+    // Refresh proactivo: si el access_token está por vencer, renuévalo antes de pedir.
+    if (!opts._retry && this.getRefreshToken() && this._tokenExpiringSoon()) {
+      try { await this.refreshSession() } catch (e) { /* el 401 de abajo lo maneja */ }
+    }
+    const token = this.getToken()
     const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {})
     if (token) headers['Authorization'] = 'Bearer ' + token
     const res = await fetch(this.API_URL + path, Object.assign({}, opts, { headers }))
     if (!res.ok) {
       if (res.status === 401 && token) {
-        localStorage.removeItem('rab_token')
+        // Refresh reactivo: intenta renovar UNA vez y reintenta la misma petición.
+        if (!opts._retry && this.getRefreshToken()) {
+          try {
+            await this.refreshSession()
+            return this.api(path, Object.assign({}, opts, { _retry: true }))
+          } catch (e) { /* cae al cierre de sesión de abajo */ }
+        }
+        this.clearSession()
         document.dispatchEvent(new CustomEvent('rab:unauthorized'))
       }
       const err = await res.json().catch(function () { return {} })
@@ -100,6 +197,62 @@ const RAB = {
     el.className = 'show ' + type
     clearTimeout(el._t)
     el._t = setTimeout(function () { el.className = '' }, 3000)
+  },
+
+  // Modal de confirmación/alerta estándar del sitio.
+  // Devuelve Promise<boolean>: true = confirmar, false = cancelar.
+  // opts: { title, message, confirmText, cancelText, danger, alert }
+  confirm(opts) {
+    opts = opts || {}
+    return new Promise(function (resolve) {
+      var prev = document.querySelector('.rab-modal-overlay')
+      if (prev) prev.remove()
+
+      var danger  = !!opts.danger
+      var isAlert = !!opts.alert
+      var icon = danger
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+
+      var overlay = document.createElement('div')
+      overlay.className = 'rab-modal-overlay'
+      overlay.innerHTML =
+        '<div class="rab-modal" role="dialog" aria-modal="true">' +
+          '<div class="rab-modal-icon' + (danger ? ' danger' : '') + '">' + icon + '</div>' +
+          '<h3 class="rab-modal-title">' + (opts.title || '¿Estás seguro?') + '</h3>' +
+          (opts.message ? '<p class="rab-modal-msg">' + opts.message + '</p>' : '') +
+          '<div class="rab-modal-actions">' +
+            (isAlert ? '' : '<button type="button" class="rab-modal-btn rab-modal-cancel">' + (opts.cancelText || 'Cancelar') + '</button>') +
+            '<button type="button" class="rab-modal-btn rab-modal-confirm' + (danger ? ' danger' : '') + '">' + (opts.confirmText || (isAlert ? 'Entendido' : 'Confirmar')) + '</button>' +
+          '</div>' +
+        '</div>'
+      document.body.appendChild(overlay)
+      overlay.offsetHeight   // reflow para animar la entrada
+      overlay.classList.add('show')
+
+      function close(result) {
+        overlay.classList.remove('show')
+        document.removeEventListener('keydown', onKey)
+        setTimeout(function () { overlay.remove() }, 220)
+        resolve(result)
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') close(false)
+        else if (e.key === 'Enter') close(true)
+      }
+      var cancelBtn = overlay.querySelector('.rab-modal-cancel')
+      if (cancelBtn) cancelBtn.addEventListener('click', function () { close(false) })
+      overlay.querySelector('.rab-modal-confirm').addEventListener('click', function () { close(true) })
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) close(false) })
+      document.addEventListener('keydown', onKey)
+      setTimeout(function () { overlay.querySelector('.rab-modal-confirm').focus() }, 60)
+    })
+  },
+
+  // Alerta informativa con el mismo estándar visual (sin botón cancelar)
+  alert(opts) {
+    if (typeof opts === 'string') opts = { message: opts }
+    return this.confirm(Object.assign({ alert: true, title: 'Aviso' }, opts))
   },
 
   carSVG() {
@@ -124,7 +277,9 @@ const RAB = {
     return '<div class="vehicle-card reveal" style="--reveal-delay:' + delay + 'ms">' +
       '<a href="' + href + '" class="card-img">' +
         (cover
-          ? '<img src="' + cover.public_url + '" alt="' + v.brand + ' ' + v.model + '" loading="lazy">'
+          ? '<img src="' + this.imgUrl(cover, 'thumb') + '"' +
+              (this.imgSrcset(cover) ? ' srcset="' + this.imgSrcset(cover) + '" sizes="(max-width:600px) 100vw, 400px"' : '') +
+              ' alt="' + v.brand + ' ' + v.model + '" loading="lazy" decoding="async">'
           : '<div class="card-img-placeholder">' + this.carSVG() + '<span style="font-size:12px">Sin foto</span></div>') +
         '<span class="card-badge badge-' + badge + '">' + status + '</span>' +
         (v.featured ? '<span class="badge-featured">Destacado</span>' : '') +
