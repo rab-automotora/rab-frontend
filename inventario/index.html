@@ -9,29 +9,130 @@
   <style>
     .inventory-hero {
       background: linear-gradient(180deg, #080D14 0%, #0A0E14 100%);
-      padding: 7rem 1.5rem 1rem;
+      padding: 6rem 1.5rem 1rem;
       border-bottom: 1px solid rgba(255,255,255,.05);
     }
     /* La sección de filtros+cards va pegada al hero: sin el padding-top global */
     .inventory-hero + .section { padding-top: 1.5rem; }
+
+    /* ── Layout: filtros a la izquierda, resultados a la derecha ── */
+    .inv-layout { display:grid; grid-template-columns:250px 1fr; gap:1.75rem; align-items:start; }
+    .inv-sidebar {
+      position:sticky; top:88px;
+      display:flex; flex-direction:column; gap:1.15rem;
+      padding:1.25rem; border-radius:14px;
+      background:var(--navy); border:1px solid rgba(95,194,218,.14);
+      transition:opacity .2s;
+    }
+    .inv-sidebar.loading { opacity:.55; }
+    .inv-group { display:flex; flex-direction:column; gap:.55rem; }
+    .inv-group-label {
+      font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.15em;
+      color:rgba(255,255,255,.35);
+    }
+    .inv-sidebar .filters { display:flex; flex-wrap:wrap; gap:.35rem; margin-bottom:0; }
+    /* Chips de categoría más compactos (solo en el sidebar del inventario) */
+    .inv-sidebar .filters .filter-btn { padding:5px 11px; font-size:12px; border-radius:8px; }
+
+    .inv-search { position:relative; }
+    .inv-search svg {
+      position:absolute; left:12px; top:50%; transform:translateY(-50%);
+      width:16px; height:16px; color:rgba(255,255,255,.35); pointer-events:none;
+    }
+    /* font-size 16px: evita el auto-zoom de iOS al enfocar los campos */
+    .inv-search input {
+      width:100%; padding:.65rem .8rem .65rem 2.3rem; border-radius:10px;
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);
+      color:#fff; font-size:16px; outline:none; transition:border-color .2s;
+    }
+    .inv-search input:focus { border-color:var(--blue); }
+    .inv-select {
+      width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);
+      color:#fff; border-radius:9px; padding:.58rem .7rem; font-size:16px;
+      outline:none; transition:border-color .2s;
+    }
+    .inv-select:focus { border-color:var(--blue); }
+    .inv-select option { background:#141B26; }
+    .inv-clear {
+      width:100%; background:none; border:1px solid rgba(255,255,255,.12);
+      color:rgba(255,255,255,.6); border-radius:9px; padding:.6rem .95rem;
+      font-size:13px; cursor:pointer; transition:all .2s;
+    }
+    .inv-clear:hover { color:#fff; border-color:rgba(255,255,255,.25); }
+
+    /* Spinner de carga progresiva (scroll infinito) */
+    .inv-loading-more { display:none; justify-content:center; padding:1.5rem 0; }
+    .inv-loading-more.active { display:flex; }
+
+    /* Botón de filtros + partes del drawer: ocultos en escritorio */
+    .inv-filter-toggle { display:none; }
+    .inv-drawer-head, .inv-drawer-foot { display:none; }
+    #inv-backdrop { display:none; }
+
+    @media (max-width: 860px) {
+      .inv-layout { grid-template-columns:1fr; gap:1.25rem; }
+
+      .inv-filter-toggle {
+        display:inline-flex; align-items:center; gap:8px;
+        margin-bottom:1.1rem; padding:.6rem 1.05rem; border-radius:10px;
+        background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12);
+        color:#fff; font-size:14px; font-weight:600; cursor:pointer;
+      }
+      .inv-filter-toggle .badge-count {
+        display:none; min-width:18px; height:18px; padding:0 5px; border-radius:999px;
+        background:var(--blue); color:#06131C; font-size:11px; font-weight:700;
+        align-items:center; justify-content:center;
+      }
+      .inv-filter-toggle .badge-count.on { display:inline-flex; }
+
+      /* La barra lateral pasa a drawer deslizante desde la izquierda */
+      .inv-sidebar {
+        position:fixed; top:0; left:0; bottom:0; z-index:300;
+        width:320px; max-width:86vw; border-radius:0;
+        transform:translateX(-100%); transition:transform .28s ease;
+        overflow-y:auto; box-shadow:8px 0 40px rgba(0,0,0,.5);
+      }
+      .inv-sidebar.open { transform:translateX(0); }
+
+      #inv-backdrop {
+        display:block; position:fixed; inset:0; z-index:290;
+        background:rgba(0,0,0,.6); backdrop-filter:blur(2px);
+        opacity:0; pointer-events:none; transition:opacity .28s;
+      }
+      #inv-backdrop.active { opacity:1; pointer-events:auto; }
+
+      .inv-drawer-head {
+        display:flex; justify-content:space-between; align-items:center;
+        padding-bottom:.6rem; border-bottom:1px solid rgba(255,255,255,.06);
+      }
+      .inv-drawer-head span { font-size:15px; font-weight:700; color:var(--white); }
+      .inv-drawer-close {
+        background:none; border:none; color:rgba(255,255,255,.5);
+        cursor:pointer; font-size:26px; line-height:1; padding:0 4px;
+      }
+      .inv-drawer-foot { display:block; width:100%; text-align:center; }
+
+      body.filters-open { overflow:hidden; }
+    }
   </style>
 </head>
 <body>
 <div id="navbar-container"></div>
 <div id="toast"></div>
+<div id="inv-backdrop" onclick="closeFilters()"></div>
 
 <section class="inventory-hero">
   <div class="container">
     <p class="label-tag reveal">Catálogo completo</p>
     <div class="reveal" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-top:.4rem;--reveal-delay:90ms">
-      <div>
-        <h1 style="font-family:var(--font-title);font-weight:900;font-size:clamp(2rem,4vw,3rem);color:var(--white)">Inventario</h1>
-        <p id="vehicle-count" style="color:var(--text-muted);font-size:14px;margin-top:.25rem">Cargando...</p>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:.65rem;flex-wrap:wrap;flex:1 1 auto">
+        <h1 style="font-family:var(--font-title);font-weight:700;font-size:clamp(1.5rem,2.6vw,2rem);color:var(--white)">Inventario</h1>
+        <p id="vehicle-count" style="color:var(--text-muted);font-size:14px">Cargando...</p>
       </div>
       <div id="active-filter-tag" style="display:none;align-items:center;gap:8px;font-size:13px;color:var(--blue-pale)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
         <span id="active-filter-label"></span>
-        <button onclick="resetFilter()" style="color:rgba(255,255,255,.4);display:flex">
+        <button onclick="clearAll()" style="color:rgba(255,255,255,.4);display:flex">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -41,12 +142,78 @@
 
 <section class="section">
   <div class="container">
-    <div id="filters" class="filters reveal" style="--reveal-delay:160ms"></div>
-    <div id="vehicles-grid" class="vehicles-grid"></div>
-    <div id="load-more-wrap" style="text-align:center;margin-top:2rem;display:none">
-      <button id="load-more-btn" onclick="loadMore()" class="btn-outline">Cargar más</button>
+    <div class="inv-layout">
+
+      <!-- ── Filtros (izquierda) ── -->
+      <aside class="inv-sidebar" id="inv-sidebar">
+        <div class="inv-drawer-head">
+          <span>Filtros</span>
+          <button class="inv-drawer-close" onclick="closeFilters()" aria-label="Cerrar filtros">×</button>
+        </div>
+        <div class="inv-group">
+          <span class="inv-group-label">Buscar</span>
+          <div class="inv-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="inv-search" type="search" autocomplete="off" placeholder="Marca o modelo...">
+          </div>
+        </div>
+
+        <div class="inv-group">
+          <span class="inv-group-label">Categoría</span>
+          <div id="filters" class="filters"></div>
+        </div>
+
+        <div class="inv-group">
+          <span class="inv-group-label">Ordenar por</span>
+          <select id="inv-sort" class="inv-select" aria-label="Ordenar">
+            <option value="">Más relevantes</option>
+            <option value="recent">Más recientes</option>
+            <option value="price_asc">Precio: menor a mayor</option>
+            <option value="price_desc">Precio: mayor a menor</option>
+            <option value="year_desc">Año: nuevo a antiguo</option>
+            <option value="km_asc">Kilometraje: menor</option>
+          </select>
+        </div>
+
+        <div class="inv-group">
+          <span class="inv-group-label">Transmisión</span>
+          <select id="inv-transmission" class="inv-select" aria-label="Transmisión">
+            <option value="">Todas</option>
+            <option>Automático</option><option>Manual</option><option>CVT</option>
+          </select>
+        </div>
+
+        <div class="inv-group">
+          <span class="inv-group-label">Combustible</span>
+          <select id="inv-fuel" class="inv-select" aria-label="Combustible">
+            <option value="">Todos</option>
+            <option>Bencina</option><option>Diésel</option><option>Híbrido</option><option>Eléctrico</option>
+          </select>
+        </div>
+
+        <button id="inv-clear" class="inv-clear" type="button">Limpiar filtros</button>
+        <button class="inv-drawer-foot btn-primary" onclick="closeFilters()">Ver resultados</button>
+      </aside>
+
+      <!-- ── Resultados (derecha) ── -->
+      <div class="inv-results">
+        <button class="inv-filter-toggle" onclick="openFilters()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          Filtros <span class="badge-count" id="inv-filter-count"></span>
+        </button>
+        <div id="vehicles-grid" class="vehicles-grid"></div>
+
+        <!-- Spinner de carga progresiva (scroll infinito) -->
+        <div id="inv-loading-more" class="inv-loading-more"><div class="spinner"></div></div>
+
+        <!-- Botón de respaldo (por si el scroll infinito no dispara) -->
+        <div id="load-more-wrap" style="text-align:center;margin-top:1rem;display:none">
+          <button id="load-more-btn" onclick="loadMore()" class="btn-outline">Cargar más</button>
+        </div>
+        <p id="count-footer" style="text-align:center;color:rgba(255,255,255,.2);font-size:12px;margin-top:1rem"></p>
+      </div>
+
     </div>
-    <p id="count-footer" style="text-align:center;color:rgba(255,255,255,.2);font-size:12px;margin-top:1rem"></p>
   </div>
 </section>
 
@@ -54,102 +221,221 @@
 
 <script src="../assets/js/config.js"></script>
 <script>
-  let currentCategory = 'Todos'
-  let currentPage = 0
-  let totalCount  = 0
   const PAGE_SIZE = 12
+  const state = {
+    category: 'Todos', search: '', sort: '', transmission: '', fuel: '', page: 0,
+  }
+  let totalCount = 0
+  let loading = false
+  let reqSeq = 0   // token de secuencia: descarta respuestas obsoletas
 
   document.getElementById('navbar-container').innerHTML = RAB.renderNavbar('Inventario')
   document.getElementById('footer-container').innerHTML = RAB.renderFooter()
   RAB.initNavbarScroll()
 
-  // Filters
+  // Chips de categoría
   const filtersEl = document.getElementById('filters')
   RAB.CATEGORIES.forEach(cat => {
     const btn = document.createElement('button')
     btn.className = 'filter-btn' + (cat === 'Todos' ? ' active' : '')
     btn.textContent = cat
-    btn.onclick = () => setFilter(cat)
+    btn.dataset.cat = cat
+    btn.onclick = () => setCategory(cat)
     filtersEl.appendChild(btn)
   })
 
-  // Anima el contenido estático (hero + filtros) de inmediato, sin esperar la API
   RAB.initReveal()
 
-  function setFilter(cat) {
-    currentCategory = cat
-    currentPage = 0
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.textContent === cat))
+  /* ── Helpers ── */
+  function debounce(fn, ms) {
+    let t
+    return function () { const a = arguments, c = this; clearTimeout(t); t = setTimeout(() => fn.apply(c, a), ms) }
+  }
+
+  function hasActiveFilters() {
+    return state.category !== 'Todos' || state.search || state.sort ||
+           state.transmission || state.fuel
+  }
+
+  function buildParams() {
+    const p = new URLSearchParams({ page: state.page, limit: PAGE_SIZE })
+    if (state.category && state.category !== 'Todos') p.set('category', state.category)
+    if (state.search.trim())   p.set('search', state.search.trim())
+    if (state.sort)            p.set('sort', state.sort)
+    if (state.transmission)    p.set('transmission', state.transmission)
+    if (state.fuel)            p.set('fuel', state.fuel)
+    return p
+  }
+
+  function skeletonCards() {
+    return Array(6).fill(`
+      <div class="skeleton-card">
+        <div class="skeleton" style="height:190px"></div>
+        <div style="padding:1rem">
+          <div class="skeleton" style="height:16px;margin-bottom:8px;width:75%"></div>
+          <div class="skeleton" style="height:22px;margin-bottom:8px;width:50%"></div>
+          <div class="skeleton" style="height:12px;width:100%"></div>
+        </div>
+      </div>`).join('')
+  }
+
+  function emptyState() {
+    return `<p style="color:var(--text-muted);text-align:center;grid-column:1/-1;padding:4rem 0">
+              No se encontraron vehículos con estos filtros.<br>
+              <button onclick="clearAll()" style="color:var(--blue);margin-top:.5rem;font-size:13px">Limpiar filtros</button>
+            </p>`
+  }
+
+  function updateCount() {
+    const el = document.getElementById('vehicle-count')
+    const plural = totalCount !== 1 ? 's' : ''
+    el.textContent = hasActiveFilters()
+      ? totalCount + ' vehículo' + plural + ' encontrado' + plural
+      : totalCount + ' vehículo' + plural + ' en total'
+  }
+
+  function updateActiveTag() {
     const tag = document.getElementById('active-filter-tag')
-    if (cat !== 'Todos') {
+    if (state.category && state.category !== 'Todos') {
       tag.style.display = 'flex'
-      document.getElementById('active-filter-label').textContent = 'Filtrando: ' + cat
+      document.getElementById('active-filter-label').textContent = 'Filtrando: ' + state.category
     } else {
       tag.style.display = 'none'
     }
-    loadVehicles(false)
   }
 
-  function resetFilter() { setFilter('Todos') }
+  function updateLoadMore() {
+    const shown = Math.min((state.page + 1) * PAGE_SIZE, totalCount)
+    const hasMore = shown < totalCount
+    document.getElementById('load-more-wrap').style.display = hasMore ? 'block' : 'none'
+    document.getElementById('count-footer').textContent =
+      totalCount > 0 ? `Mostrando ${shown} de ${totalCount} vehículos` : ''
+  }
 
-  async function loadVehicles(append = false) {
+  function setControlsBusy(busy) {
+    document.querySelectorAll('.filter-btn').forEach(b => { b.disabled = busy })
+    ;['inv-sort', 'inv-transmission', 'inv-fuel', 'inv-clear'].forEach(id => { document.getElementById(id).disabled = busy })
+    document.getElementById('inv-sidebar').classList.toggle('loading', busy)
+  }
+
+  /* ── Carga ── */
+  async function loadVehicles(append) {
     const grid = document.getElementById('vehicles-grid')
+    const seq  = ++reqSeq
+    loading = true
     if (!append) {
-      grid.innerHTML = Array(6).fill(`
-        <div class="skeleton-card">
-          <div class="skeleton" style="height:190px"></div>
-          <div style="padding:1rem">
-            <div class="skeleton" style="height:16px;margin-bottom:8px;width:75%"></div>
-            <div class="skeleton" style="height:22px;margin-bottom:8px;width:50%"></div>
-            <div class="skeleton" style="height:12px;width:100%"></div>
-          </div>
-        </div>`).join('')
+      document.getElementById('load-more-wrap').style.display = 'none'
+      setControlsBusy(true)
+      grid.innerHTML = skeletonCards()
+    } else {
+      document.getElementById('inv-loading-more').classList.add('active')
     }
 
     try {
-      const params = new URLSearchParams({ page: currentPage, limit: PAGE_SIZE })
-      if (currentCategory !== 'Todos') params.set('category', currentCategory)
-
-      const { data, count } = await RAB.api('/api/vehicles/all?' + params)
+      const { data, count } = await RAB.api('/api/vehicles/all?' + buildParams())
+      if (seq !== reqSeq) return   // llegó una respuesta vieja: la ignoramos
       totalCount = count || 0
-
-      document.getElementById('vehicle-count').textContent =
-        totalCount + ' vehículo' + (totalCount !== 1 ? 's' : '') + ' en total'
+      updateCount()
 
       if (append) {
         data.forEach((v, i) => { const el = document.createElement('div'); el.innerHTML = RAB.vehicleCard(v, i); grid.appendChild(el.firstElementChild) })
       } else {
-        grid.innerHTML = data.length
-          ? data.map((v, i) => RAB.vehicleCard(v, i)).join('')
-          : `<p style="color:var(--text-muted);text-align:center;grid-column:1/-1;padding:4rem 0">
-               No hay vehículos en esta categoría.<br>
-               <button onclick="resetFilter()" style="color:var(--blue);margin-top:.5rem;font-size:13px">Ver todos</button>
-             </p>`
+        grid.innerHTML = data.length ? data.map((v, i) => RAB.vehicleCard(v, i)).join('') : emptyState()
       }
       RAB.initReveal()
-
-      const shown = Math.min((currentPage + 1) * PAGE_SIZE, totalCount)
-      const hasMore = shown < totalCount
-      document.getElementById('load-more-wrap').style.display = hasMore ? 'block' : 'none'
-      document.getElementById('count-footer').textContent =
-        totalCount > 0 ? `Mostrando ${Math.min((currentPage + 1) * PAGE_SIZE, totalCount)} de ${totalCount} vehículos` : ''
-
+      updateLoadMore()
     } catch (e) {
-      if (!append) grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;grid-column:1/-1">Error cargando vehículos.</p>'
+      if (seq === reqSeq && !append)
+        grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;grid-column:1/-1">Error cargando vehículos.</p>'
+    } finally {
+      if (seq === reqSeq) {
+        loading = false
+        setControlsBusy(false)
+        document.getElementById('inv-loading-more').classList.remove('active')
+      }
     }
   }
 
+  function applyFilters() {
+    state.page = 0
+    updateFilterBadge()
+    loadVehicles(false)
+  }
+
   async function loadMore() {
+    if (loading) return
+    const shown = Math.min((state.page + 1) * PAGE_SIZE, totalCount)
+    if (shown >= totalCount) return
+    state.page++
     const btn = document.getElementById('load-more-btn')
-    btn.textContent = 'Cargando...'
     btn.disabled = true
-    currentPage++
     await loadVehicles(true)
-    btn.textContent = `Cargar más (${totalCount - Math.min((currentPage + 1) * PAGE_SIZE, totalCount)} restantes)`
     btn.disabled = false
   }
 
-  loadVehicles()
+  /* ── Interacciones de filtros ── */
+  function setCategory(cat) {
+    state.category = cat
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat))
+    updateActiveTag()
+    applyFilters()
+  }
+
+  function clearAll() {
+    Object.assign(state, { category: 'Todos', search: '', sort: '', transmission: '', fuel: '' })
+    document.getElementById('inv-search').value = ''
+    document.getElementById('inv-sort').value = ''
+    document.getElementById('inv-transmission').value = ''
+    document.getElementById('inv-fuel').value = ''
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === 'Todos'))
+    updateActiveTag()
+    applyFilters()
+  }
+
+  document.getElementById('inv-search').addEventListener('input', debounce(function (e) {
+    state.search = e.target.value; applyFilters()
+  }, 350))
+  document.getElementById('inv-sort').addEventListener('change', function (e) { state.sort = e.target.value; applyFilters() })
+  document.getElementById('inv-transmission').addEventListener('change', function (e) { state.transmission = e.target.value; applyFilters() })
+  document.getElementById('inv-fuel').addEventListener('change', function (e) { state.fuel = e.target.value; applyFilters() })
+  document.getElementById('inv-clear').addEventListener('click', clearAll)
+
+  /* ── Drawer de filtros (móvil) ── */
+  function openFilters() {
+    document.getElementById('inv-sidebar').classList.add('open')
+    document.getElementById('inv-backdrop').classList.add('active')
+    document.body.classList.add('filters-open')
+  }
+  function closeFilters() {
+    document.getElementById('inv-sidebar').classList.remove('open')
+    document.getElementById('inv-backdrop').classList.remove('active')
+    document.body.classList.remove('filters-open')
+  }
+  window.addEventListener('resize', function () { if (window.innerWidth > 860) closeFilters() })
+
+  function updateFilterBadge() {
+    let n = 0
+    if (state.category !== 'Todos') n++
+    if (state.search.trim())  n++
+    if (state.sort)           n++
+    if (state.transmission)   n++
+    if (state.fuel)           n++
+    const b = document.getElementById('inv-filter-count')
+    b.textContent = n
+    b.classList.toggle('on', n > 0)
+  }
+
+  /* ── Scroll infinito: auto-carga al acercarse al final (con botón de respaldo) ── */
+  if (window.IntersectionObserver) {
+    const io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting && !loading) loadMore()
+      })
+    }, { rootMargin: '400px' })
+    io.observe(document.getElementById('load-more-wrap'))
+  }
+
+  loadVehicles(false)
 </script>
 </body>
 </html>

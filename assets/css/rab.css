@@ -292,6 +292,15 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   background: linear-gradient(180deg, var(--blue-light), var(--blue));
   color: #06131C; border-color: transparent; font-weight: 600;
 }
+/* Mientras carga un filtro: bloquea todos y muestra spinner en el activo */
+.filter-btn:disabled { cursor: wait; opacity: .5; }
+.filter-btn.active:disabled { opacity: 1; }
+.filter-spinner {
+  display: inline-block; width: 12px; height: 12px; vertical-align: -1px;
+  margin-right: 7px; border-radius: 50%;
+  border: 2px solid rgba(6,19,28,.35); border-top-color: #06131C;
+  animation: spin .6s linear infinite;
+}
 
 /* ── Grid ────────────────────────────────────────────────── */
 .vehicles-grid {

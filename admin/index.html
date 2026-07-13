@@ -80,6 +80,43 @@
     .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
     .admin-table  { min-width:520px; }
 
+    /* Pista sutil de scroll horizontal: fade + chevron que se ocultan al llegar al final.
+       Solo se muestran cuando la tabla realmente desborda (clase .can-scroll vía JS). */
+    .admin-table-wrap { position:relative; }
+    .admin-table-wrap::after {
+      content:''; position:absolute; top:0; right:0; bottom:0; width:46px; z-index:1;
+      pointer-events:none; opacity:0; transition:opacity .25s;
+      background:linear-gradient(90deg, rgba(13,18,28,0), rgba(13,18,28,.92));
+    }
+    .admin-table-wrap::before {
+      content:'\203A'; position:absolute; top:50%; right:14px; z-index:2;
+      transform:translateY(-50%); pointer-events:none; opacity:0; transition:opacity .25s;
+      color:var(--blue-light); font-size:20px; font-weight:700; line-height:1;
+      text-shadow:0 0 8px rgba(0,0,0,.5);
+    }
+    .admin-table-wrap.can-scroll:not(.at-end)::after  { opacity:1; }
+    .admin-table-wrap.can-scroll:not(.at-end)::before { opacity:.85; animation:scrollNudge 1.5s ease-in-out infinite; }
+    @keyframes scrollNudge {
+      0%,100% { transform:translateY(-50%) translateX(0); }
+      50%     { transform:translateY(-50%) translateX(4px); }
+    }
+
+    /* ══ PAGINADOR ═══════════════════════════════════════════ */
+    .pager { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; margin-top:1rem; }
+    .pager:empty { display:none; }
+    .pager-controls { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+    .pager-btn {
+      min-width:34px; height:34px; padding:0 8px; border-radius:8px;
+      background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.1);
+      color:rgba(255,255,255,.7); font-size:13px; font-weight:600; cursor:pointer;
+      transition:all .15s;
+    }
+    .pager-btn:hover:not(:disabled):not(.active) { background:rgba(255,255,255,.08); color:#fff; }
+    .pager-btn.active { background:linear-gradient(180deg,var(--blue-light),var(--blue)); color:#06131C; border-color:transparent; cursor:default; }
+    .pager-btn:disabled { opacity:.35; cursor:not-allowed; }
+    .pager-ellipsis { color:rgba(255,255,255,.3); padding:0 4px; }
+    .pager-info { color:rgba(255,255,255,.35); font-size:12px; }
+
     /* Hide less important columns on small screens */
     @media (max-width:560px) {
       .col-hide { display:none; }
@@ -300,6 +337,9 @@
             <tbody id="dashboard-table"></tbody>
           </table>
         </div>
+        <div style="padding:.85rem 1.25rem;border-top:1px solid rgba(255,255,255,.06);text-align:center">
+          <button onclick="showPage('vehicles')" class="btn-ghost" style="font-size:12px">Ver todo el inventario →</button>
+        </div>
       </div>
     </div>
 
@@ -413,6 +453,7 @@
             </table>
           </div>
         </div>
+        <div id="vehicles-pagination" class="pager"></div>
       </div>
     </div>
 
@@ -580,7 +621,7 @@ async function loadDashboard() {
   try {
     const [stats, vehicles] = await Promise.all([
       RAB.api('/api/admin/stats'),
-      RAB.api('/api/vehicles/all?page=0&limit=10')
+      RAB.api('/api/vehicles/all?page=0&limit=5')
     ])
     const STAT_CONFIG = [
       { key: 'available', label: 'Disponibles',   cls: 'available', icon: '<path d="M19 17H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-3h8l2 3h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>', color: '#10b981' },
@@ -608,6 +649,7 @@ async function loadDashboard() {
         '<td><div style="display:flex;justify-content:flex-end"><button class="icon-btn icon-btn-edit" data-tip="Editar" aria-label="Editar" onclick="showPage(\'vehicles\');editVehicle(\'' + v.id + '\')">' + ICON_EDIT + '</button></div></td>' +
       '</tr>'
     }).join('')
+    updateScrollHints()
   } catch (e) { RAB.toast('Error cargando dashboard', 'error') }
 }
 
@@ -616,6 +658,8 @@ var allVehicles  = []
 var vehicleCount = 0
 var vehicleSearch = ''
 var vehicleSort   = { key: 'created_at', dir: 'desc' }   // por defecto: más recientes primero
+var vehiclePage   = 0
+var VEH_PAGE_SIZE = 12
 
 async function loadVehiclesTable() {
   document.getElementById('vehicle-total').textContent = 'Cargando vehículos...'
@@ -624,12 +668,14 @@ async function loadVehiclesTable() {
     const { data, count } = await RAB.api('/api/vehicles/all?page=0&limit=100')
     allVehicles  = data || []
     vehicleCount = count || allVehicles.length
+    vehiclePage  = 0
     renderVehiclesTable(true)
   } catch (e) { RAB.toast('Error cargando vehículos', 'error') }
 }
 
 function onVehicleSearch(val) {
   vehicleSearch = val || ''
+  vehiclePage = 0
   renderVehiclesTable(false)
 }
 
@@ -641,12 +687,14 @@ function sortVehicles(key) {
     // fecha y precio parten en descendente (más nuevo / más caro); texto ascendente
     vehicleSort.dir = (key === 'created_at' || key === 'price') ? 'desc' : 'asc'
   }
+  vehiclePage = 0
   renderVehiclesTable(false)
 }
 
 function resetVehicleView() {
   vehicleSearch = ''
   vehicleSort = { key: 'created_at', dir: 'desc' }
+  vehiclePage = 0
   var inp = document.getElementById('vehicle-search')
   if (inp) inp.value = ''
 }
@@ -702,11 +750,20 @@ function renderVehiclesTable(animate) {
       '<tr><td colspan="6" style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.35);font-size:13px">' +
         (q ? 'No se encontraron vehículos que coincidan con la búsqueda.' : 'No hay vehículos registrados todavía.') +
       '</td></tr>'
+    document.getElementById('vehicles-pagination').innerHTML = ''
+    updateScrollHints()
     return
   }
 
+  // Paginación del lado cliente: se aplica sobre la lista ya filtrada + ordenada
+  var pages = Math.max(1, Math.ceil(list.length / VEH_PAGE_SIZE))
+  if (vehiclePage >= pages) vehiclePage = pages - 1
+  if (vehiclePage < 0) vehiclePage = 0
+  var start    = vehiclePage * VEH_PAGE_SIZE
+  var pageList = list.slice(start, start + VEH_PAGE_SIZE)
+
   var STATUS_BADGE = { 'Disponible': 'available', 'Vendido': 'sold', 'Próximo Ingreso': 'upcoming' }
-  document.getElementById('vehicles-table').innerHTML = list.map(function (v, idx) {
+  document.getElementById('vehicles-table').innerHTML = pageList.map(function (v, idx) {
     var anim = animate ? ' style="animation:fadeUp .3s ease ' + (idx * 25) + 'ms both"' : ''
     return '<tr id="veh-row-' + v.id + '"' + anim + '>' +
       '<td style="color:var(--white)">' + v.brand + ' ' + v.model + ' ' + v.year + '</td>' +
@@ -722,6 +779,40 @@ function renderVehiclesTable(animate) {
       '</td>' +
     '</tr>'
   }).join('')
+  renderVehiclesPager(list.length, pages, start, pageList.length)
+  updateScrollHints()
+}
+
+/* ── Paginador de la tabla de vehículos (cliente) ── */
+function setVehiclePage(p) {
+  vehiclePage = p
+  renderVehiclesTable(false)
+  document.getElementById('vehicles-list-view').scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function pagerRange(cur, pages) {
+  var res = [], last = pages - 1
+  var from = Math.max(0, cur - 1), to = Math.min(last, cur + 1)
+  if (from > 0) { res.push(0); if (from > 1) res.push('...') }
+  for (var i = from; i <= to; i++) res.push(i)
+  if (to < last) { if (to < last - 1) res.push('...'); res.push(last) }
+  return res
+}
+
+function renderVehiclesPager(total, pages, start, shown) {
+  var el = document.getElementById('vehicles-pagination')
+  if (pages <= 1) { el.innerHTML = ''; return }
+  var cur = vehiclePage
+  var html = '<div class="pager-controls">'
+  html += '<button class="pager-btn"' + (cur === 0 ? ' disabled' : '') + ' onclick="setVehiclePage(' + (cur - 1) + ')" aria-label="Anterior">‹</button>'
+  pagerRange(cur, pages).forEach(function (n) {
+    if (n === '...') html += '<span class="pager-ellipsis">…</span>'
+    else html += '<button class="pager-btn' + (n === cur ? ' active' : '') + '" onclick="setVehiclePage(' + n + ')">' + (n + 1) + '</button>'
+  })
+  html += '<button class="pager-btn"' + (cur >= pages - 1 ? ' disabled' : '') + ' onclick="setVehiclePage(' + (cur + 1) + ')" aria-label="Siguiente">›</button>'
+  html += '</div>'
+  html += '<span class="pager-info">' + (start + 1) + '–' + (start + shown) + ' de ' + total + '</span>'
+  el.innerHTML = html
 }
 
 /* ── Form ── */
@@ -1286,6 +1377,24 @@ function hideGlobalLoading() {
   document.getElementById('gl-progress').classList.remove('active')
   document.getElementById('gl-sub').classList.remove('active')
 }
+
+/* ══ SCROLL HINT ═══════════════════════════════════════════ */
+// Marca las tablas que desbordan horizontalmente para mostrar el fade/chevron,
+// y las oculta cuando el scroll llega al final.
+function updateScrollHints() {
+  document.querySelectorAll('.admin-table-wrap').forEach(function (wrap) {
+    var sc = wrap.querySelector('.table-scroll')
+    if (!sc) return
+    var max = sc.scrollWidth - sc.clientWidth
+    wrap.classList.toggle('can-scroll', max > 4)
+    wrap.classList.toggle('at-end', sc.scrollLeft >= max - 4)
+    if (!sc._hintBound) {
+      sc._hintBound = true
+      sc.addEventListener('scroll', updateScrollHints, { passive: true })
+    }
+  })
+}
+window.addEventListener('resize', updateScrollHints)
 
 /* ══ SESSION GUARD ═════════════════════════════════════════ */
 var _sessionExpired = false
