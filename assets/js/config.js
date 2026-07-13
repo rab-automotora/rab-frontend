@@ -339,7 +339,7 @@ const RAB = {
     if (count < 2) return
     const dots = cardImg.querySelectorAll('.card-dot')
     let idx = 0
-    const DUR = 560   // debe coincidir con la transición CSS
+    const DUR = 420   // debe coincidir con la transición CSS (.card-slider)
     slider._timer = setInterval(function () {
       idx++
       slider.classList.remove('no-anim')
@@ -355,7 +355,7 @@ const RAB = {
           idx = 0
         }, DUR)
       }
-    }, 1400)
+    }, 1100)
   },
   cardHoverStop(cardImg) {
     const slider = cardImg.querySelector('.card-slider')
@@ -449,7 +449,7 @@ const RAB = {
       '</button>' +
     '</nav>' +
     '<div class="navbar-mobile" id="mobile-menu">' + mobileHtml +
-      '<a href="' + self.wa() + '" target="_blank" class="btn-whatsapp" style="justify-content:center;margin-top:8px">Contáctanos por WhatsApp</a>' +
+      '<a href="' + self.wa() + '" target="_blank" class="btn-nav-cta" style="justify-content:center;margin-top:8px">Contáctanos</a>' +
     '</div>'
   },
 
