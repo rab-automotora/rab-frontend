@@ -7,16 +7,27 @@
   <link rel="stylesheet" href="../assets/css/rab.css">
   <link rel="icon" href="../assets/images/logo.png">
   <style>
-    .detail-wrap { max-width: 1140px; margin: 0 auto; padding: 2rem 1.5rem 4rem; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 2.5rem; align-items: start; }
-    @media (max-width: 768px) { .detail-wrap { grid-template-columns: 1fr; } }
+    .detail-topbar { max-width: 1140px; margin: 0 auto; padding: 1rem 1.5rem .25rem; }
+    .detail-wrap { max-width: 1140px; margin: 0 auto; padding: .5rem 1.5rem 4rem; display: grid; grid-template-columns: minmax(0, 65fr) minmax(0, 35fr); gap: 2.5rem; align-items: start; }
+    /* (La media query móvil está al final del bloque para ganar en la cascada.) */
     .gallery-main { position: relative; aspect-ratio: 16/10; border-radius: 16px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); }
     .gallery-main img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-photo { opacity: 0; transition: opacity .25s ease; }
+    .gallery-photo.loaded { opacity: 1; }
+    .gallery-loader { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg-card); z-index: 1; }
     .gallery-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; color: #fff; transition: background .2s; border: none; cursor: pointer; }
     .gallery-nav:hover { background: rgba(0,0,0,.8); }
     .gallery-nav.prev { left: 10px; }
     .gallery-nav.next { right: 10px; }
     .gallery-counter { position: absolute; bottom: 10px; right: 12px; background: rgba(0,0,0,.6); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 12px; }
-    .gallery-thumbs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-top: 10px; }
+    .gallery-thumbs-wrap { position: relative; margin-top: 10px; }
+    .gallery-thumbs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent; }
+    .gallery-thumbs::-webkit-scrollbar { height: 6px; }
+    .gallery-thumbs::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border-radius: 3px; }
+    /* Fade en los extremos para indicar que hay más miniaturas al hacer scroll */
+    .gallery-thumbs.fade-left  { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 26px); mask-image: linear-gradient(90deg, transparent 0, #000 26px); }
+    .gallery-thumbs.fade-right { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent 100%); mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent 100%); }
+    .gallery-thumbs.fade-left.fade-right { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 26px, #000 calc(100% - 26px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 26px, #000 calc(100% - 26px), transparent 100%); }
     .gallery-thumb { flex-shrink: 0; width: 64px; height: 48px; border-radius: 8px; overflow: hidden; border: 2px solid transparent; cursor: pointer; opacity: .5; transition: all .2s; }
     .gallery-thumb.active { border-color: var(--blue); opacity: 1; }
     .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; }
@@ -29,6 +40,41 @@
     .spec-card svg { color: var(--blue); flex-shrink: 0; margin-top: 2px; }
     .spec-label { font-size: 10px; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: .1em; }
     .spec-value { font-size: 13px; font-weight: 600; color: var(--white); margin-top: 2px; }
+    .detail-cta-btn { width: 100%; padding: .9rem 1rem; font-size: 14px; }
+
+    /* ── Móvil ─────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      /* Orden: título/badges → galería → precio → datos → botón → descripción.
+         display:contents expone los hijos de ambas columnas para reordenarlos. */
+      /* Padding lateral reducido: el contenido aprovecha casi todo el ancho */
+      .detail-topbar { padding-left: .85rem; padding-right: .85rem; }
+      .detail-wrap { display: flex; flex-direction: column; gap: 1rem; padding-left: .85rem; padding-right: .85rem; }
+      .detail-wrap > div:first-child, .detail-info { display: contents; }
+      .detail-head         { order: 1; }
+      #gallery-main        { order: 2; }
+      .gallery-thumbs-wrap { order: 3; }
+      .detail-price        { order: 4; }
+      #specs-grid          { order: 5; }
+      #detail-cta          { order: 6; }
+      #detail-desc         { order: 7; margin-top: 0; }
+      /* Galería full-bleed real: ocupa todo el ancho del dispositivo */
+      #gallery-main { width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); border-radius: 0; aspect-ratio: 4/3; }
+      .gallery-thumbs-wrap { margin-top: 8px; }
+      /* Miniaturas: carrusel limpio sin scrollbar; el fade indica que hay más */
+      .gallery-thumbs { scrollbar-width: none; }
+      .gallery-thumbs::-webkit-scrollbar { display: none; }
+      /* Info compacta */
+      .detail-price     { padding: .7rem 1rem; }
+      .detail-price-val { font-size: 1.75rem; }
+      .specs-grid       { gap: .45rem; }
+      .spec-card        { padding: .5rem .6rem; gap: .5rem; }
+      .spec-card svg    { width: 13px; height: 13px; margin-top: 1px; }
+      .spec-label       { font-size: 9px; }
+      .spec-value       { font-size: 12px; }
+      /* Botón menos dominante y sin duplicar el FAB de WhatsApp */
+      .detail-cta-btn { padding: .8rem 1rem; font-size: 13.5px; }
+      .wa-fab { display: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -36,7 +82,7 @@
 <div id="toast"></div>
 
 <main style="padding-top:64px;min-height:100vh;background:var(--bg-dark)">
-  <div style="max-width:1140px;margin:0 auto;padding:2rem 1.5rem .5rem">
+  <div class="detail-topbar">
     <button onclick="history.back()" style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.4);font-size:13px;transition:color .2s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.4)'">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
       Volver al inventario
@@ -50,7 +96,9 @@
         <div class="gallery-main" id="gallery-main">
           <div class="spinner" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
         </div>
-        <div class="gallery-thumbs" id="gallery-thumbs"></div>
+        <div class="gallery-thumbs-wrap">
+          <div class="gallery-thumbs" id="gallery-thumbs"></div>
+        </div>
         <!-- Descripción · bajo las fotos -->
         <div id="detail-desc" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem 1.75rem;margin-top:1.25rem">
           <p style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-bottom:.5rem">Descripción</p>
@@ -59,7 +107,7 @@
       </div>
       <!-- Info -->
       <div class="detail-info">
-        <div>
+        <div class="detail-head">
           <div id="detail-badges" style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap"></div>
           <h1 id="detail-title" style="font-family:var(--font-title);font-weight:900;font-size:2rem;color:var(--white);line-height:1.1"></h1>
           <p id="detail-year"   style="color:var(--text-muted);font-size:14px;margin-top:.25rem"></p>
@@ -94,13 +142,24 @@
 
   function preload(url) { if (url) { const im = new Image(); im.src = url } }
 
+  // Miniaturas: fade en los extremos cuando la tira se desborda (móvil y PC)
+  function updateThumbFade() {
+    const strip = document.getElementById('gallery-thumbs')
+    if (!strip) return
+    const max = strip.scrollWidth - strip.clientWidth
+    strip.classList.toggle('fade-left',  max > 4 && strip.scrollLeft > 4)
+    strip.classList.toggle('fade-right', max > 4 && strip.scrollLeft < max - 4)
+  }
+  window.addEventListener('resize', updateThumbFade)
+
   function showImg(i) {
     activeImg = i
     const main = document.getElementById('gallery-main')
     const img  = images[i]
     const srcset = RAB.imgSrcset(img)
     main.innerHTML = `
-      <img src="${RAB.imgUrl(img, 'medium')}"${srcset ? ` srcset="${srcset}" sizes="(max-width:768px) 100vw, 560px"` : ''} alt="" decoding="async" fetchpriority="high">
+      <div class="gallery-loader"><div class="spinner"></div></div>
+      <img class="gallery-photo" src="${RAB.imgUrl(img, 'medium')}"${srcset ? ` srcset="${srcset}" sizes="(max-width:768px) 100vw, 560px"` : ''} alt="" decoding="async" fetchpriority="high" onload="this.classList.add('loaded');const l=this.parentNode.querySelector('.gallery-loader');if(l)l.remove()" onerror="const l=this.parentNode.querySelector('.gallery-loader');if(l)l.remove()">
       ${images.length > 1 ? `
         <button class="gallery-nav prev" onclick="showImg(${(i - 1 + images.length) % images.length})">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -135,6 +194,8 @@
           thumbs.innerHTML = images.map((img, i) =>
             `<div class="gallery-thumb ${i === 0 ? 'active' : ''}" onclick="showImg(${i})"><img src="${RAB.imgUrl(img, 'thumb')}" alt="" loading="lazy" decoding="async"></div>`
           ).join('')
+          thumbs.addEventListener('scroll', updateThumbFade, { passive: true })
+          requestAnimationFrame(updateThumbFade)
         }
       } else {
         main.innerHTML = `<div class="card-img-placeholder">${RAB.carSVG()}<span style="font-size:13px">Sin imágenes</span></div>`
@@ -174,10 +235,7 @@
       // CTA
       const waMsg = `Hola, me interesa cotizar el ${v.brand} ${v.model} ${v.year} — ${RAB.price(v.price)}. ¿Tienen disponibilidad?`
       document.getElementById('detail-cta').innerHTML = v.status === 'Disponible'
-        ? `<a href="${RAB.whatsappUrl(waMsg)}" target="_blank" class="btn-whatsapp" style="width:100%;justify-content:center;font-size:14px;padding:1rem">
-             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
-             Cotizar este vehículo por WhatsApp
-           </a>`
+        ? `<a href="${RAB.whatsappUrl(waMsg)}" target="_blank" class="btn-nav-cta detail-cta-btn">Contactar este vehículo</a>`
         : `<div style="text-align:center;padding:1rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px">
              <p style="color:var(--text-muted);font-size:13px">Este vehículo no está disponible</p>
              <a href="./index.html" style="color:var(--blue);font-size:13px;display:inline-block;margin-top:.5rem">Ver otros vehículos →</a>
