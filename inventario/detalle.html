@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalle | RAB Automotora</title>
-  <link rel="stylesheet" href="../assets/css/rab.css">
+  <link rel="stylesheet" href="../assets/css/rab.css?v=20260714000510">
   <link rel="icon" href="../assets/images/logo.png">
   <style>
     .detail-topbar { max-width: 1140px; margin: 0 auto; padding: 1rem 1.5rem .25rem; }
@@ -42,37 +42,87 @@
     .spec-value { font-size: 13px; font-weight: 600; color: var(--white); margin-top: 2px; }
     .detail-cta-btn { width: 100%; padding: .9rem 1rem; font-size: 14px; }
 
-    /* ── Móvil ─────────────────────────────────────────────── */
+    /* ── CTA premium "Cotizar" (escritorio y móvil) ── */
+    .cta-quote {
+      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      width: 100%; padding: .95rem 1.25rem; border-radius: 12px;
+      font-family: var(--font-body); font-weight: 700; font-size: 15px; letter-spacing: .01em;
+      color: #06131C; text-decoration: none; border: none; cursor: pointer;
+      background: linear-gradient(180deg, var(--blue-light), var(--blue));
+      box-shadow: 0 10px 26px -10px rgba(62,159,203,.65), inset 0 1px 0 rgba(255,255,255,.4);
+      transition: filter .15s, transform .15s, box-shadow .15s;
+    }
+    .cta-quote:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 14px 32px -10px rgba(62,159,203,.8), inset 0 1px 0 rgba(255,255,255,.45); }
+    .cta-quote:active { transform: translateY(0); }
+    .cta-quote svg { flex-shrink: 0; }
+
+    /* Barra de acción fija (solo móvil; se activa vía .with-mobile-bar) */
+    #detail-mobile-bar { display: none; }
+
+    /* ── Móvil / Tablet: layout pensado para teléfono ───────── */
     @media (max-width: 768px) {
-      /* Orden: título/badges → galería → precio → datos → botón → descripción.
-         display:contents expone los hijos de ambas columnas para reordenarlos. */
-      /* Padding lateral reducido: el contenido aprovecha casi todo el ancho */
-      .detail-topbar { padding-left: .85rem; padding-right: .85rem; }
-      .detail-wrap { display: flex; flex-direction: column; gap: 1rem; padding-left: .85rem; padding-right: .85rem; }
+      .detail-topbar { padding: .75rem .9rem .25rem; }
+      .detail-wrap { display: flex; flex-direction: column; gap: 1.15rem; padding: .5rem .9rem 1.5rem; }
       .detail-wrap > div:first-child, .detail-info { display: contents; }
-      .detail-head         { order: 1; }
-      #gallery-main        { order: 2; }
-      .gallery-thumbs-wrap { order: 3; }
+
+      /* Orden mobile-first: imagen (hero) → identidad → precio → datos → descripción */
+      #gallery-main        { order: 1; }
+      .gallery-thumbs-wrap { order: 2; }
+      .detail-head         { order: 3; }
       .detail-price        { order: 4; }
       #specs-grid          { order: 5; }
-      #detail-cta          { order: 6; }
-      #detail-desc         { order: 7; margin-top: 0; }
+      #detail-desc         { order: 6; margin-top: 0; }
+      #detail-cta          { order: 7; }
+
       /* Galería full-bleed real: ocupa todo el ancho del dispositivo */
       #gallery-main { width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); border-radius: 0; aspect-ratio: 4/3; }
       .gallery-thumbs-wrap { margin-top: 8px; }
-      /* Miniaturas: carrusel limpio sin scrollbar; el fade indica que hay más */
       .gallery-thumbs { scrollbar-width: none; }
       .gallery-thumbs::-webkit-scrollbar { display: none; }
-      /* Info compacta */
-      .detail-price     { padding: .7rem 1rem; }
-      .detail-price-val { font-size: 1.75rem; }
-      .specs-grid       { gap: .45rem; }
-      .spec-card        { padding: .5rem .6rem; gap: .5rem; }
-      .spec-card svg    { width: 13px; height: 13px; margin-top: 1px; }
-      .spec-label       { font-size: 9px; }
-      .spec-value       { font-size: 12px; }
-      /* Botón menos dominante y sin duplicar el FAB de WhatsApp */
-      .detail-cta-btn { padding: .8rem 1rem; font-size: 13.5px; }
+
+      /* Identidad */
+      .detail-head { margin-top: .1rem; }
+      #detail-title { font-size: 1.7rem; }
+
+      /* Precio prominente */
+      .detail-price { padding: .9rem 1.1rem; }
+      .detail-price-val { font-size: 2rem; }
+
+      /* Datos: lista limpia con divisores dentro de un panel (sin cajitas), ancho completo */
+      .specs-grid {
+        grid-template-columns: 1fr; gap: 0;
+        background: rgba(20,42,68,.35); border: 1px solid var(--border);
+        border-radius: 14px; padding: 0 1.05rem;
+      }
+      .spec-card {
+        background: transparent; border: none; border-radius: 0;
+        border-bottom: 1px solid rgba(255,255,255,.07);
+        padding: .85rem 0; gap: .8rem; align-items: center;
+      }
+      .spec-card:last-child { border-bottom: none; }
+      .spec-card svg { width: 16px; height: 16px; margin-top: 0; }
+      .spec-card > div { flex: 1; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+      .spec-label { font-size: 12px; color: rgba(255,255,255,.45); text-transform: none; letter-spacing: 0; margin: 0; }
+      .spec-value { font-size: 14px; font-weight: 600; color: var(--white); margin: 0; text-align: right; }
+
+      /* Descripción: más aire, menos caja */
+      #detail-desc { background: transparent; border: none; border-top: 1px solid var(--border); border-radius: 0; padding: 1.15rem .1rem 0; }
+
+      /* Barra de acción fija abajo (app-like): precio + CTA siempre visibles */
+      .with-mobile-bar #detail-cta { display: none; }
+      .with-mobile-bar { padding-bottom: 88px; }
+      .with-mobile-bar #detail-mobile-bar {
+        display: flex; align-items: center; gap: .85rem;
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 120;
+        padding: .7rem .9rem calc(.7rem + env(safe-area-inset-bottom, 0px));
+        background: rgba(9,13,20,.92); backdrop-filter: blur(12px);
+        border-top: 1px solid rgba(95,194,218,.2);
+      }
+      #detail-mobile-bar .mb-price { display: flex; flex-direction: column; line-height: 1.15; flex-shrink: 0; }
+      #detail-mobile-bar .mb-price-label { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.4); }
+      #detail-mobile-bar .mb-price-val { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.1rem; color: #fff; }
+      #detail-mobile-bar .cta-quote { flex: 1; width: auto; padding: .8rem 1rem; font-size: 14px; }
+
       .wa-fab { display: none !important; }
     }
   </style>
@@ -120,6 +170,7 @@
         <div id="detail-cta"></div>
       </div>
     </div>
+    <div id="detail-mobile-bar"></div>
   </div>
 
   <div id="detail-loading" style="padding:6rem 0;text-align:center"><div class="spinner"></div></div>
@@ -131,7 +182,7 @@
 
 <div id="footer-container"></div>
 
-<script src="../assets/js/config.js"></script>
+<script src="../assets/js/config.js?v=20260714000510"></script>
 <script>
   document.getElementById('navbar-container').innerHTML = RAB.renderNavbar('Inventario')
   document.getElementById('footer-container').innerHTML = RAB.renderFooter()
@@ -233,13 +284,24 @@
       }
 
       // CTA
-      const waMsg = `Hola, me interesa cotizar el ${v.brand} ${v.model} ${v.year} — ${RAB.price(v.price)}. ¿Tienen disponibilidad?`
-      document.getElementById('detail-cta').innerHTML = v.status === 'Disponible'
-        ? `<a href="${RAB.whatsappUrl(waMsg)}" target="_blank" class="btn-nav-cta detail-cta-btn">Contactar este vehículo</a>`
-        : `<div style="text-align:center;padding:1rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px">
+      const waMsg  = `Hola, me interesa cotizar el ${v.brand} ${v.model} ${v.year} — ${RAB.price(v.price)}. ¿Tienen disponibilidad?`
+      const waUrl  = RAB.whatsappUrl(waMsg)
+      const waIcon = RAB.waSVG(18)
+      if (v.status === 'Disponible') {
+        document.getElementById('detail-cta').innerHTML =
+          `<a href="${waUrl}" target="_blank" class="cta-quote">${waIcon} Cotizar este auto</a>`
+        // Barra de acción fija en móvil: precio + CTA siempre visibles
+        document.getElementById('detail-mobile-bar').innerHTML =
+          `<div class="mb-price"><span class="mb-price-label">Precio</span><span class="mb-price-val">${RAB.price(v.price)}</span></div>
+           <a href="${waUrl}" target="_blank" class="cta-quote">${waIcon} Cotizar este auto</a>`
+        document.getElementById('detail-content').classList.add('with-mobile-bar')
+      } else {
+        document.getElementById('detail-cta').innerHTML =
+          `<div style="text-align:center;padding:1rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px">
              <p style="color:var(--text-muted);font-size:13px">Este vehículo no está disponible</p>
              <a href="./index.html" style="color:var(--blue);font-size:13px;display:inline-block;margin-top:.5rem">Ver otros vehículos →</a>
            </div>`
+      }
 
       document.getElementById('detail-loading').style.display = 'none'
       document.getElementById('detail-content').style.display = 'block'

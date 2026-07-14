@@ -1,0 +1,16 @@
+# Control de caché — RAB Automotora (Apache / cPanel)
+# Objetivo: que los cambios se vean al instante sin limpiar el navegador.
+
+<IfModule mod_headers.c>
+  # HTML: siempre revalidar → se ve el cambio apenas subes el archivo
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  # Assets (css/js/imágenes/fuentes/video): se cachean, pero como usan ?v=<versión>
+  # (ver bump-cache.js), al cambiar la versión el navegador los vuelve a descargar.
+  # max-age moderado (1h) como red de seguridad por si olvidas correr bump-cache.js.
+  <FilesMatch "\.(css|js|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|mp4)$">
+    Header set Cache-Control "public, max-age=3600"
+  </FilesMatch>
+</IfModule>
