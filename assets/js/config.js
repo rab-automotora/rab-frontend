@@ -1,8 +1,9 @@
 // assets/js/config.js — RAB Automotora
 // Config central + helpers + renders de navbar/footer
 // "base" es la ruta relativa hacia la raíz: '' en index, '../' en subcarpetas
-
+console.log("V1.0.1");
 const RAB = {
+
   // Backend URL — cambiar al desplegar
   API_URL: 'https://rab-backend.onrender.com',
   // API_URL: 'http://localhost:4000',
