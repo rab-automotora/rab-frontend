@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalle | RAB Automotora</title>
-  <link rel="stylesheet" href="../assets/css/rab.css?v=20260718005021">
+  <link rel="stylesheet" href="../assets/css/rab.css?v=20261023042655">
   <link rel="icon" href="../assets/images/logo.png">
   <style>
     .detail-topbar { max-width: 1140px; margin: 0 auto; padding: 1rem 1.5rem .25rem; }
@@ -159,7 +159,7 @@
       <div class="detail-info">
         <div class="detail-head">
           <div id="detail-badges" style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap"></div>
-          <h1 id="detail-title" style="font-family:var(--font-title);font-weight:900;font-size:2rem;color:var(--white);line-height:1.1"></h1>
+          <h1 id="detail-title" style="font-family:var(--font-title);font-style:italic;font-stretch:110%;text-transform:uppercase;font-weight:900;font-size:2rem;color:var(--white);line-height:1.1"></h1>
           <p id="detail-year"   style="color:var(--text-muted);font-size:14px;margin-top:.25rem"></p>
         </div>
         <div class="detail-price">
@@ -175,14 +175,14 @@
 
   <div id="detail-loading" style="padding:6rem 0;text-align:center"><div class="spinner"></div></div>
   <div id="detail-error" style="display:none;padding:6rem 1.5rem;text-align:center">
-    <p style="font-family:var(--font-title);font-weight:700;font-size:1.25rem;color:var(--white);margin-bottom:1rem">Vehículo no encontrado</p>
+    <p style="font-family:var(--font-title);font-style:italic;font-stretch:110%;text-transform:uppercase;font-weight:700;font-size:1.25rem;color:var(--white);margin-bottom:1rem">Vehículo no encontrado</p>
     <a href="./index.html" style="color:var(--blue);font-size:14px">← Volver al inventario</a>
   </div>
 </main>
 
 <div id="footer-container"></div>
 
-<script src="../assets/js/config.js?v=20260718005021"></script>
+<script src="../assets/js/config.js?v=20261023042655"></script>
 <script>
   document.getElementById('navbar-container').innerHTML = RAB.renderNavbar('Inventario')
   document.getElementById('footer-container').innerHTML = RAB.renderFooter()

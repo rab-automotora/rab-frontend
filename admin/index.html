@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin | RAB Automotora</title>
-  <link rel="stylesheet" href="../assets/css/rab.css?v=20260718005021">
+  <link rel="stylesheet" href="../assets/css/rab.css?v=20261023042655">
   <link rel="icon" href="../assets/images/logo.png">
   <style>
     /* ══ LOGIN ══════════════════════════════════════════════ */
@@ -150,16 +150,95 @@
       display:flex; justify-content:space-between; align-items:center;
       flex-wrap:wrap; gap:.75rem; margin-bottom:1.75rem;
     }
-    .page-header h1 { font-family:var(--font-body);font-weight:800;font-size:1.4rem;color:var(--white); }
+    .page-header h1 { font-family:var(--font-title);font-style:italic;font-weight:900;font-stretch:110%;text-transform:uppercase;font-size:1.7rem;color:var(--white); }
     .page-header p  { color:rgba(255,255,255,.35);font-size:13px;margin-top:3px; }
 
-    /* ══ WASH ADMIN ═══════════════════════════════════════════ */
-    .wash-admin-feature {
-      display:inline-flex; align-items:center; gap:4px;
-      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
-      color:rgba(255,255,255,.65); font-size:12px;
-      padding:4px 8px 4px 10px; border-radius:8px;
+    /* ══ TIPOS DE LAVADO (mantenedor) ═════════════════════════ */
+    .wt-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; margin-bottom:1.25rem; }
+    @media (max-width:700px) { .wt-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    .wt-kpi { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:.85rem 1rem; display:grid; gap:.15rem; }
+    .wt-kpi span { font-family:var(--font-label); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--text-muted); }
+    .wt-kpi b { font-family:var(--font-title); font-style:italic; font-weight:900; font-size:1.6rem; font-variant-numeric:tabular-nums; }
+    .wt-tools { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
+    .wt-filters { display:flex; flex-wrap:wrap; gap:.35rem; }
+    .wt-filters button { border:1px solid var(--border); border-radius:999px; padding:.4rem .85rem; font-size:13px; font-weight:600; color:var(--text-muted); transition:all .2s; }
+    .wt-filters button[aria-pressed="true"] { background:var(--white); color:var(--bg-dark); border-color:var(--white); }
+    .wt-filters .c { opacity:.7; margin-left:.25rem; font-variant-numeric:tabular-nums; }
+    .wt-hint { font-size:13px; color:var(--text-muted); margin-bottom:.9rem; }
+    .wt-list { display:grid; gap:.55rem; }
+    .wt-row { display:grid; grid-template-columns:30px 64px minmax(0,1.8fr) repeat(3,minmax(0,.6fr)) auto auto; gap:1rem; align-items:center; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:.7rem .9rem; transition:border-color .2s, opacity .25s, box-shadow .2s; }
+    .wt-row:hover { border-color:rgba(142,216,242,.3); }
+    .wt-row.off { opacity:.6; }
+    .wt-row.dragging { opacity:.35; }
+    .wt-row.drop-above { box-shadow:0 -3px 0 var(--turbo); }
+    .wt-row.drop-below { box-shadow:0 3px 0 var(--turbo); }
+    .wt-row.flash { animation:wtFlash 1.6s ease; }
+    @keyframes wtFlash { from { background:rgba(255,106,31,.22); } }
+    .wt-handle { display:grid; justify-items:center; gap:2px; color:var(--text-muted); cursor:grab; }
+    .wt-handle button { color:var(--text-muted); line-height:0; padding:2px; border-radius:4px; }
+    .wt-handle button:hover { color:var(--white); }
+    .wt-handle button:disabled { opacity:.2; pointer-events:none; }
+    .wt-handle .o { font-family:var(--font-label); font-weight:700; font-size:14px; font-variant-numeric:tabular-nums; }
+    .wt-thumb { position:relative; width:64px; height:48px; border-radius:8px; overflow:hidden; display:grid; place-items:center; color:var(--white); background:radial-gradient(90% 120% at 80% 10%, rgba(43,154,216,.6), transparent 70%), #0F2740; }
+    .wt-thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .wt-name { display:grid; gap:.2rem; min-width:0; }
+    .wt-name b { font-weight:700; font-size:15.5px; display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; }
+    .wt-name span { color:var(--text-muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .wt-bdg { font-family:var(--font-label); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:.05rem .45rem; border-radius:4px; background:var(--bg-card-2); color:var(--white); }
+    .wt-bdg.hot { background:var(--turbo); color:var(--on-turbo); }
+    .wt-bdg.new { background:var(--sky); color:#04202E; }
+    .wt-bdg.star { background:transparent; color:var(--gold); border:1px solid rgba(228,169,78,.5); }
+    .wt-cell { display:grid; font-size:14px; }
+    .wt-cell small { font-family:var(--font-label); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); }
+    .wt-cell b { font-weight:600; font-variant-numeric:tabular-nums; }
+    .wt-acts { display:flex; gap:.4rem; }
+    @media (min-width:1101px) { .wt-cells { display:contents; } }
+    @media (max-width:1100px) {
+      .wt-row { grid-template-columns:30px 56px minmax(0,1fr) auto; grid-template-areas:"h t n s" "h t c a"; row-gap:.5rem; }
+      .wt-handle { grid-area:h; } .wt-thumb { grid-area:t; width:56px; } .wt-name { grid-area:n; }
+      .wt-cells { grid-area:c; display:flex; flex-wrap:wrap; gap:1rem; } .wt-sw { grid-area:s; justify-self:end; } .wt-acts { grid-area:a; justify-self:end; }
     }
+    @media (max-width:480px) {
+      .wt-row { grid-template-columns:30px minmax(0,1fr) auto; grid-template-areas:"h n s" "h c c" "h a a"; }
+      .wt-thumb { display:none; } .wt-acts { justify-self:start; }
+    }
+    .wt-empty { text-align:center; padding:3rem 1.5rem; border:2px dashed var(--border); border-radius:16px; display:grid; gap:.8rem; justify-items:center; color:var(--text-muted); }
+
+    /* Editor (panel lateral) */
+    .wt-overlay { position:fixed; inset:0; z-index:4999; background:rgba(2,8,14,.72); backdrop-filter:blur(3px); }
+    .wt-dialog { position:fixed; inset:0 0 0 auto; z-index:5000; border:0; padding:0; margin:0 0 0 auto; width:min(1040px,100%); height:100%; max-height:100%; max-width:100%; background:var(--bg-dark); color:var(--white); border-left:1px solid var(--border); }
+    .wt-dialog[open] { display:flex; flex-direction:column; animation:wtDrawer .4s var(--ease); }
+    @keyframes wtDrawer { from { transform:translateX(100%); } to { transform:none; } }
+    .wt-dlg-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.4rem; border-bottom:1px solid var(--border); }
+    .wt-dlg-head h2 { font-family:var(--font-title); font-style:italic; font-weight:900; text-transform:uppercase; font-size:1.35rem; }
+    .wt-dlg-body { flex:1; overflow-y:auto; display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:1.75rem; padding:1.4rem; align-items:start; }
+    @media (max-width:860px) { .wt-dlg-body { grid-template-columns:1fr; } .wt-preview { order:-1; position:static !important; } }
+    .wt-dlg-foot { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:.7rem; padding:1rem 1.4rem; border-top:1px solid var(--border); }
+    .wt-form { display:grid; gap:1.6rem; min-width:0; }
+    .wt-fs { display:grid; gap:.8rem; }
+    .wt-fs > .form-subhead { margin-bottom:0; }
+    .wt-row2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.8rem; }
+    @media (max-width:520px) { .wt-row2 { grid-template-columns:1fr; } }
+    .wt-err { font-size:13px; color:#f87171; font-weight:600; }
+    .wt-hintx { font-size:12.5px; color:var(--text-muted); }
+    .wt-money { position:relative; }
+    .wt-money .form-input { padding-left:1.6rem; font-variant-numeric:tabular-nums; }
+    .wt-money::before { content:"$"; position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:14px; }
+    .wt-feats { display:flex; flex-wrap:wrap; gap:.4rem; min-height:32px; }
+    .wt-chip { display:inline-flex; align-items:center; gap:.35rem; padding:.3rem .4rem .3rem .7rem; border-radius:999px; background:var(--bg-card-2); border:1px solid var(--border); font-size:13.5px; max-width:100%; animation:fadeUp .25s var(--ease); }
+    .wt-chip span { overflow-wrap:anywhere; }
+    .wt-chip button { width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,.08); display:grid; place-items:center; flex:none; }
+    .wt-chip button:hover { background:#dc2626; color:#fff; }
+    .wt-add { display:flex; gap:.5rem; }
+    .wt-add .form-input { flex:1; min-width:0; }
+    .wt-icons { display:flex; flex-wrap:wrap; gap:.4rem; }
+    .wt-icons button { width:44px; height:44px; border-radius:10px; border:1px solid var(--border); background:var(--bg-card); display:grid; place-items:center; color:var(--white); transition:all .2s; }
+    .wt-icons button[aria-pressed="true"] { border-color:var(--turbo); background:rgba(255,106,31,.12); }
+    .wt-upload { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; }
+    .wt-preview { position:sticky; top:0; border:1px dashed var(--border); border-radius:14px; padding:1rem; background:var(--bg-section); display:grid; gap:.6rem; }
+    .wt-preview > small { font-family:var(--font-label); text-transform:uppercase; letter-spacing:.12em; font-weight:700; color:var(--text-muted); font-size:13px; }
+    .wt-preview .wash-card { pointer-events:none; }
+    .wt-switches { display:grid; gap:.7rem; }
 
     /* ══ GLOBAL LOADING OVERLAY ════════════════════════════════ */
     #global-loading {
@@ -292,7 +371,7 @@
       </a>
       <a class="admin-nav-item" data-page="washing" onclick="showPage('washing');closeSidebar()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-        Lavado
+        Tipos de lavado
       </a>
     </nav>
     <div style="padding:.75rem;border-top:1px solid rgba(255,255,255,.06)">
@@ -457,25 +536,47 @@
       </div>
     </div>
 
-    <!-- ── LAVADO ── -->
+    <!-- ── TIPOS DE LAVADO ── -->
     <div id="page-washing" class="admin-page">
       <div class="page-header">
         <div>
-          <h1>Planes de Lavado</h1>
-          <p>Edita los precios y características de cada plan</p>
+          <h1>Tipos de lavado</h1>
+          <p>Crea, edita, ordena y activa los lavados que ve el cliente. Los cambios se publican al guardar.</p>
         </div>
+        <button type="button" class="btn-primary" onclick="openWashEditor(null)">+ Nuevo tipo de lavado</button>
       </div>
-      <div id="washing-loading" style="text-align:center;padding:3rem 1.5rem">
-        <div class="spinner"></div>
-        <p style="margin-top:1rem;font-size:13px;color:rgba(255,255,255,.3)">Cargando planes...</p>
+      <div class="wt-kpis" id="wt-kpis"></div>
+      <div class="wt-tools">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="search" id="wt-q" placeholder="Buscar por nombre o cualidad" aria-label="Buscar tipos de lavado">
+        </div>
+        <div class="wt-filters" id="wt-filters" role="group" aria-label="Filtrar"></div>
       </div>
-      <div id="washing-plans-forms" style="display:none"></div>
+      <p class="wt-hint" id="wt-hint"></p>
+      <div class="wt-list" id="wt-list"></div>
     </div>
+
+    <div class="wt-overlay" id="wt-overlay" hidden onclick="closeWashEditor()"></div>
+    <dialog class="wt-dialog" id="wt-dialog" aria-labelledby="wt-dlg-title">
+      <div class="wt-dlg-head">
+        <h2 id="wt-dlg-title">Editar lavado</h2>
+        <button type="button" class="icon-btn" onclick="closeWashEditor()" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="wt-dlg-body">
+        <form class="wt-form" id="wt-form" novalidate></form>
+        <aside class="wt-preview"><small>Vista previa en el sitio</small><div id="wt-preview-card"></div></aside>
+      </div>
+      <div class="wt-dlg-foot">
+        <button type="button" class="btn-ghost" onclick="closeWashEditor()">Cancelar</button>
+        <button type="submit" form="wt-form" class="btn-primary" id="wt-save">Guardar cambios</button>
+      </div>
+    </dialog>
 
   </main>
 </div><!-- /#admin-app -->
 
-<script src="../assets/js/config.js?v=20260718005021"></script>
+<script src="../assets/js/config.js?v=20261023042655"></script>
 <script>
 /* ══ ICONOS DE ACCIÓN ══════════════════════════════════════ */
 var ICON_EDIT  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'
@@ -518,7 +619,7 @@ async function doLogin(e) {
   btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px"></span> Ingresando...'
   errEl.style.display = 'none'
   try {
-    const res  = await fetch(RAB.API_URL + '/api/admin/login', {
+    const res  = await RAB._fetchColdStart(RAB.API_URL + '/api/admin/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: document.getElementById('login-email').value, password: document.getElementById('login-pass').value })
     })
@@ -569,7 +670,7 @@ async function showPage(name) {
   if (navItem) navItem.classList.add('active')
   if (name === 'dashboard') loadDashboard()
   if (name === 'vehicles')  loadVehiclesTable()
-  if (name === 'washing')   loadWashingPlans()
+  if (name === 'washing')   loadWashTypes()
 }
 
 /* ══ SKELETONS ═════════════════════════════════════════════ */
@@ -1210,143 +1311,441 @@ dz.addEventListener('dragover',  function (e) { e.preventDefault(); dz.classList
 dz.addEventListener('dragleave', function ()  { dz.classList.remove('drag') })
 dz.addEventListener('drop',      function (e) { e.preventDefault(); dz.classList.remove('drag'); uploadImages(e.dataTransfer.files) })
 
-/* ══ WASHING PLANS ═════════════════════════════════════════ */
-var WASH_SIZES = [
-  'Auto / Hatchback',
-  'SUV / Crossover',
-  'Extra Grande (SUV XL / Station)',
-  'Super Grande (Pickup / Camioneta)',
-]
-var washingPlans = []
+/* ══ TIPOS DE LAVADO (mantenedor) ══════════════════════════ */
+var WT = { types: [], sizes: [], filter: 'all', q: '', draft: null, editingId: null, pendingImage: null, removeImage: false, dragId: null }
+var WT_DURATIONS = []
+for (var _m = 30; _m <= 540; _m += 30) WT_DURATIONS.push(_m)
+var WT_ICON_UP   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 15l6-6 6 6"/></svg>'
+var WT_ICON_DOWN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>'
 
-async function loadWashingPlans() {
-  document.getElementById('washing-loading').style.display = 'block'
-  document.getElementById('washing-plans-forms').style.display = 'none'
+function wtById(id) { return WT.types.find(function (t) { return String(t.id) === String(id) }) }
+function wtLive() {
+  return WT.types.filter(function (t) { return !t.archived_at }).sort(function (a, b) { return a.sort_order - b.sort_order })
+}
+function wtCanDrag() { return WT.filter === 'all' && !WT.q.trim() }
+
+async function loadWashTypes(flashId) {
+  var list = document.getElementById('wt-list')
+  if (!WT.types.length) list.innerHTML = '<div style="text-align:center;padding:3rem 1.5rem"><div class="spinner"></div><p style="margin-top:1rem;font-size:14px;color:var(--text-muted)">Cargando tipos de lavado...</p></div>'
   try {
-    washingPlans = await RAB.api('/api/admin/wash-plans')
-    if (!washingPlans || !washingPlans.length) {
-      document.getElementById('washing-loading').innerHTML = '<p style="color:rgba(255,255,255,.3);font-size:13px">No se encontraron planes en la base de datos.</p>'
-      return
-    }
-    renderWashingForms()
-    document.getElementById('washing-loading').style.display = 'none'
-    document.getElementById('washing-plans-forms').style.display = 'block'
-  } catch (e) { RAB.toast('Error cargando planes de lavado', 'error') }
+    var res = await RAB.api('/api/admin/wash-types')
+    WT.types = res.data || []
+    WT.sizes = res.sizes || []
+    renderWashTypes(flashId)
+  } catch (e) {
+    list.innerHTML = '<div class="wt-empty"><p>No se pudieron cargar los tipos de lavado: ' + RAB.esc(e.message) + '</p><button type="button" class="btn-primary" onclick="loadWashTypes()">Reintentar</button></div>'
+  }
 }
 
-function renderWashingForms() {
-  var sorted = washingPlans.slice().sort(function (a, b) { return a.sort_order - b.sort_order })
-  document.getElementById('washing-plans-forms').innerHTML = sorted.map(function (plan, idx) {
-    var isPremium = !!plan.recommended
-    var pricesHtml = WASH_SIZES.map(function (size) {
-      var existing = (plan.prices || []).find(function (p) { return p.size === size })
-      return '<div class="form-group">' +
-        '<label class="form-label">' + size + '</label>' +
-        '<input type="number" class="form-input wash-price-inp" ' +
-          'data-plan-id="' + plan.id + '" data-size="' + size.replace(/"/g, '&quot;') + '" ' +
-          'value="' + (existing ? existing.price : '') + '" min="0" placeholder="0" inputmode="numeric">' +
-      '</div>'
-    }).join('')
+function renderWashTypes(flashId) {
+  var live = wtLive()
+  var act  = live.filter(function (t) { return t.active })
+  var archived = WT.types.length - live.length
+  var firstSize = WT.sizes[0] && WT.sizes[0].id
+  var minPrice = act.length && firstSize ? Math.min.apply(null, act.map(function (t) { return t.prices[firstSize] || Infinity })) : 0
 
-    var subtitlePreview = (plan.subtitle || 'Sin descripción — haz clic para editar').replace(/</g, '&lt;')
+  document.getElementById('wt-kpis').innerHTML =
+    '<div class="wt-kpi"><span>En el sitio</span><b>' + act.length + '</b></div>' +
+    '<div class="wt-kpi"><span>Inactivos</span><b>' + (live.length - act.length) + '</b></div>' +
+    '<div class="wt-kpi"><span>Con abono</span><b>' + act.filter(function (t) { return t.requires_deposit }).length + '</b></div>' +
+    '<div class="wt-kpi"><span>Desde' + (WT.sizes[0] ? ' (' + RAB.esc(WT.sizes[0].short_name) + ')' : '') + '</span><b>' + (isFinite(minPrice) && minPrice ? RAB.price(minPrice) : '—') + '</b></div>'
 
-    return '<div class="wash-accordion" id="wash-panel-' + plan.id + '" style="animation:fadeUp .4s cubic-bezier(.22,1,.36,1) ' + (idx * 120) + 'ms both">' +
-      '<button type="button" class="wash-accordion-head" aria-expanded="false" onclick="toggleWashPanel(\'' + plan.id + '\')">' +
-        '<div class="wash-accordion-titles">' +
-          '<div class="wash-accordion-title-row">' +
-            '<span class="wash-accordion-title">' + plan.title + '</span>' +
-            (isPremium ? '<div class="badge-recommended" style="animation:none"><div class="badge-dot" style="animation:none"></div>Recomendado</div>' : '') +
-          '</div>' +
-          '<span class="wash-accordion-sub" id="wash-sub-' + plan.id + '">' + subtitlePreview + '</span>' +
-        '</div>' +
-        '<svg class="wash-accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
-      '</button>' +
-      '<div class="wash-accordion-body"><div class="wash-accordion-inner"><div class="wash-accordion-content">' +
-        '<div class="form-group" style="margin-bottom:1.25rem">' +
-          '<label class="form-label">Descripción del plan</label>' +
-          '<input type="text" class="form-input" id="subtitle-' + plan.id + '" value="' + (plan.subtitle || '').replace(/"/g, '&quot;') + '" placeholder="Descripción corta del plan...">' +
-        '</div>' +
-        '<p class="form-label" style="margin-bottom:.75rem">Precios por tamaño de vehículo</p>' +
-        '<div class="form-grid" style="margin-bottom:1.5rem">' + pricesHtml + '</div>' +
-        '<p class="form-label" style="margin-bottom:.75rem">Características incluidas</p>' +
-        '<div id="features-wrap-' + plan.id + '" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:.75rem;min-height:32px">' +
-          renderFeaturesHtml(plan) +
-        '</div>' +
-        '<div style="display:flex;gap:.5rem;margin-bottom:1.5rem">' +
-          '<input type="text" class="form-input" id="feature-input-' + plan.id + '" ' +
-            'placeholder="Ej: Lavado exterior detallado" style="max-width:320px" ' +
-            'onkeydown="if(event.key===\'Enter\'){event.preventDefault();addWashFeature(\'' + plan.id + '\')}">' +
-          '<button type="button" onclick="addWashFeature(\'' + plan.id + '\')" ' +
-            'class="btn-primary" style="font-size:12px;padding:8px 14px;white-space:nowrap">+ Agregar</button>' +
-        '</div>' +
-        '<button type="button" onclick="saveWashingPlan(\'' + plan.id + '\')" class="btn-primary">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>' +
-          ' Guardar cambios' +
-        '</button>' +
-      '</div></div></div>' +
+  var F = [['all', 'Todos', live.length], ['active', 'Activos', act.length], ['inactive', 'Inactivos', live.length - act.length], ['archived', 'Archivados', archived]]
+  document.getElementById('wt-filters').innerHTML = F.map(function (f) {
+    return '<button type="button" data-f="' + f[0] + '" aria-pressed="' + (WT.filter === f[0]) + '">' + f[1] + '<span class="c">' + f[2] + '</span></button>'
+  }).join('')
+
+  document.getElementById('wt-hint').textContent = WT.filter === 'archived'
+    ? 'Los tipos archivados no se muestran en el sitio. Sus reservas se conservan.'
+    : wtCanDrag() ? 'Arrastra las filas o usa las flechas para cambiar el orden en que aparecen en el sitio.'
+    : 'Para reordenar, vuelve a "Todos" y limpia la búsqueda.'
+
+  var q = WT.q.trim().toLowerCase()
+  var rows = WT.types.filter(function (t) {
+    if (WT.filter === 'archived') { if (!t.archived_at) return false }
+    else {
+      if (t.archived_at) return false
+      if (WT.filter === 'active' && !t.active) return false
+      if (WT.filter === 'inactive' && t.active) return false
+    }
+    return !q || t.name.toLowerCase().indexOf(q) >= 0 || (t.features || []).join(' ').toLowerCase().indexOf(q) >= 0
+  }).sort(function (a, b) { return a.sort_order - b.sort_order })
+
+  var el = document.getElementById('wt-list')
+  if (!rows.length) {
+    el.innerHTML = '<div class="wt-empty"><span style="color:var(--sky)">' + RAB.washIcon('drop', 52) + '</span><p>' +
+      (q ? 'Sin resultados para "' + RAB.esc(WT.q) + '".' : WT.filter === 'archived' ? 'No hay tipos archivados.' : WT.filter === 'all' ? 'Aún no hay tipos de lavado. El sitio mostrará un aviso con el botón de WhatsApp.' : 'No hay tipos en este filtro.') +
+      '</p>' + (!q && WT.filter === 'all' ? '<button type="button" class="btn-primary" onclick="openWashEditor(null)">Crear el primero</button>' : '') + '</div>'
+    return
+  }
+
+  var drag = wtCanDrag(), sz = WT.sizes[0]
+  el.innerHTML = rows.map(function (t, i) {
+    var arch = !!t.archived_at
+    var badgeCls = t.badge === 'Más popular' ? ' hot' : t.badge === 'Nuevo' ? ' new' : ''
+    var badges = (t.badge ? '<span class="wt-bdg' + badgeCls + '">' + RAB.esc(t.badge) + '</span>' : '') +
+      (t.featured ? '<span class="wt-bdg star">Destacado</span>' : '') +
+      (t.requires_deposit ? '<span class="wt-bdg">Abono</span>' : '')
+    var thumb = t.image_thumb_url || t.image_url
+    return '<div class="wt-row' + (t.active || arch ? '' : ' off') + (String(t.id) === String(flashId) ? ' flash' : '') + '" data-id="' + RAB.esc(t.id) + '"' + (drag ? ' draggable="true"' : '') + '>' +
+      '<div class="wt-handle">' + (drag
+        ? '<button type="button" data-mv="-1" aria-label="Subir ' + RAB.esc(t.name) + '"' + (i === 0 ? ' disabled' : '') + '>' + WT_ICON_UP + '</button><span class="o">' + t.sort_order + '</span><button type="button" data-mv="1" aria-label="Bajar ' + RAB.esc(t.name) + '"' + (i === rows.length - 1 ? ' disabled' : '') + '>' + WT_ICON_DOWN + '</button>'
+        : '<span class="o">' + (arch ? '—' : t.sort_order) + '</span>') + '</div>' +
+      '<div class="wt-thumb">' + (thumb ? '<img src="' + RAB.esc(thumb) + '" alt="" loading="lazy">' : RAB.washIcon(t.icon, 26)) + '</div>' +
+      '<div class="wt-name"><b>' + RAB.esc(t.name) + badges + '</b><span>' + RAB.esc(t.description) + '</span></div>' +
+      '<div class="wt-cells">' +
+        '<div class="wt-cell"><small>Duración</small><b>' + RAB.duration(t.duration_minutes) + '</b></div>' +
+        '<div class="wt-cell"><small>Desde</small><b>' + (sz && t.prices[sz.id] ? RAB.price(t.prices[sz.id]) : '—') + '</b></div>' +
+        '<div class="wt-cell"><small>Reservas</small><b>' + (t.bookings_count || 0) + '</b></div>' +
+      '</div>' +
+      '<div class="wt-sw">' + (arch
+        ? '<button type="button" class="btn-ghost" data-restore>Restaurar</button>'
+        : '<label class="switch" title="' + (t.active ? 'Visible en el sitio' : 'Oculto del sitio') + '"><input type="checkbox" data-toggle aria-label="Activo: ' + RAB.esc(t.name) + '"' + (t.active ? ' checked' : '') + '><span class="switch-slider"></span></label>') + '</div>' +
+      '<div class="wt-acts">' + (arch ? '' :
+        '<button type="button" class="icon-btn icon-btn-edit" data-edit data-tip="Editar" aria-label="Editar ' + RAB.esc(t.name) + '">' + ICON_EDIT + '</button>' +
+        '<button type="button" class="icon-btn icon-btn-danger" data-del data-tip="Eliminar" aria-label="Eliminar ' + RAB.esc(t.name) + '">' + ICON_TRASH + '</button>') + '</div>' +
     '</div>'
   }).join('')
 }
 
-function toggleWashPanel(id) {
-  var el = document.getElementById('wash-panel-' + id)
-  if (!el) return
-  var open = el.classList.toggle('open')
-  var head = el.querySelector('.wash-accordion-head')
-  if (head) head.setAttribute('aria-expanded', String(open))
-}
-
-function renderFeaturesHtml(plan) {
-  if (!plan.features || !plan.features.length) {
-    return '<span style="font-size:12px;color:rgba(255,255,255,.2)">Sin características — agrega una arriba</span>'
-  }
-  var planId = plan.id
-  return plan.features.map(function (f, i) {
-    return '<span class="wash-admin-feature">' + f +
-      '<button type="button" onclick="removeWashFeature(\'' + planId + '\',' + i + ')" ' +
-        'title="Eliminar" style="background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;padding:0 0 0 4px;font-size:16px;line-height:1">×</button>' +
-    '</span>'
-  }).join('')
-}
-
-function addWashFeature(planId) {
-  var input = document.getElementById('feature-input-' + planId)
-  var val = input.value.trim()
-  if (!val) return
-  var plan = washingPlans.find(function (p) { return p.id === planId })
-  if (!plan) return
-  plan.features = (plan.features || []).concat([val])
-  input.value = ''
-  document.getElementById('features-wrap-' + planId).innerHTML = renderFeaturesHtml(plan)
-}
-
-function removeWashFeature(planId, idx) {
-  var plan = washingPlans.find(function (p) { return p.id === planId })
-  if (!plan) return
-  plan.features = plan.features.filter(function (_, i) { return i !== idx })
-  document.getElementById('features-wrap-' + planId).innerHTML = renderFeaturesHtml(plan)
-}
-
-async function saveWashingPlan(planId) {
-  var plan = washingPlans.find(function (p) { return p.id === planId })
-  if (!plan) return
-  var prices = WASH_SIZES.map(function (size) {
-    var inp = document.querySelector('.wash-price-inp[data-plan-id="' + planId + '"][data-size="' + size + '"]')
-    return { size: size, price: inp ? (+inp.value || 0) : 0 }
-  }).filter(function (p) { return p.price > 0 })
-  var subtitle = document.getElementById('subtitle-' + planId).value.trim()
-  var payload = { subtitle: subtitle, prices: prices, features: plan.features || [] }
-  showGlobalLoading('Guardando cambios...')
+async function wtSaveOrder(ids, flashId) {
+  var prev = WT.types.map(function (t) { return { t: t, o: t.sort_order } })
+  ids.forEach(function (id, i) { var t = wtById(id); if (t) t.sort_order = i + 1 })
+  renderWashTypes(flashId)
   try {
-    await RAB.api('/api/admin/wash-plans/' + planId, { method: 'PUT', body: JSON.stringify(payload) })
-    plan.subtitle = subtitle
-    plan.prices = prices
-    var subEl = document.getElementById('wash-sub-' + planId)
-    if (subEl) subEl.textContent = subtitle || 'Sin descripción — haz clic para editar'
-    RAB.toast('Plan "' + plan.title + '" actualizado')
+    await RAB.api('/api/admin/wash-types/order', { method: 'PUT', body: JSON.stringify({ ids: ids }) })
+    RAB.toast('Orden actualizado en el sitio')
+  } catch (e) {
+    prev.forEach(function (p) { p.t.sort_order = p.o })
+    renderWashTypes()
+    RAB.toast(e.message, 'error')
+  }
+}
+
+function wtMove(id, delta) {
+  var ids = wtLive().map(function (t) { return t.id })
+  var i = ids.findIndex(function (x) { return String(x) === String(id) }), j = i + delta
+  if (i < 0 || j < 0 || j >= ids.length) return
+  var tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp
+  wtSaveOrder(ids, id).then(function () {
+    var b = document.querySelector('.wt-row[data-id="' + id + '"] [data-mv="' + delta + '"]')
+    if (b && !b.disabled) b.focus()
+  })
+}
+
+async function wtToggle(id, active) {
+  var t = wtById(id)
+  t.active = active
+  renderWashTypes()
+  try {
+    await RAB.api('/api/admin/wash-types/' + id, { method: 'PATCH', body: JSON.stringify({ active: active }) })
+    RAB.toast(active ? '"' + t.name + '" ahora aparece en el sitio' : '"' + t.name + '" ya no aparece en el sitio')
+  } catch (e) {
+    t.active = !active
+    renderWashTypes()
+    RAB.toast(e.message, 'error')
+  }
+}
+
+async function wtDelete(id) {
+  var t = wtById(id), has = (t.bookings_count || 0) > 0
+  var choice = await RAB.confirm({
+    danger: true,
+    title: '¿Eliminar "' + RAB.esc(t.name) + '"?',
+    message: has
+      ? 'Tiene ' + t.bookings_count + ' reservas registradas. Se archivará: deja de mostrarse en el sitio y las reservas conservan sus datos. Si solo quieres ocultarlo por un tiempo, desactívalo.'
+      : 'Se borra de forma definitiva, junto con su imagen. No tiene reservas asociadas.',
+    confirmText: has ? 'Archivar' : 'Eliminar',
+    altText: has && t.active ? 'Solo desactivar' : undefined,
+  })
+  if (choice === 'alt') { wtToggle(id, false); return }
+  if (choice !== true) return
+  showGlobalLoading(has ? 'Archivando...' : 'Eliminando...')
+  try {
+    var r = await RAB.api('/api/admin/wash-types/' + id, { method: 'DELETE' })
+    RAB.toast(r.archived ? '"' + t.name + '" archivado. Sus reservas se conservan.' : '"' + t.name + '" eliminado')
+    await loadWashTypes()
   } catch (e) { RAB.toast(e.message, 'error') }
   finally { hideGlobalLoading() }
 }
+
+async function wtRestore(id) {
+  showGlobalLoading('Restaurando...')
+  try {
+    var t = await RAB.api('/api/admin/wash-types/' + id + '/restore', { method: 'POST' })
+    WT.filter = 'all'
+    RAB.toast('"' + t.name + '" restaurado como inactivo')
+    await loadWashTypes(t.id)
+  } catch (e) { RAB.toast(e.message, 'error') }
+  finally { hideGlobalLoading() }
+}
+
+// Eventos del listado
+document.getElementById('wt-filters').addEventListener('click', function (e) {
+  var b = e.target.closest('[data-f]'); if (!b) return
+  WT.filter = b.getAttribute('data-f'); renderWashTypes()
+})
+document.getElementById('wt-q').addEventListener('input', function (e) { WT.q = e.target.value; renderWashTypes() })
+var wtList = document.getElementById('wt-list')
+wtList.addEventListener('click', function (e) {
+  var row = e.target.closest('.wt-row'); if (!row) return
+  var id = row.getAttribute('data-id'), b
+  if ((b = e.target.closest('[data-mv]'))) wtMove(id, +b.getAttribute('data-mv'))
+  else if (e.target.closest('[data-edit]')) openWashEditor(id)
+  else if (e.target.closest('[data-del]')) wtDelete(id)
+  else if (e.target.closest('[data-restore]')) wtRestore(id)
+})
+wtList.addEventListener('change', function (e) {
+  if (!e.target.matches('[data-toggle]')) return
+  wtToggle(e.target.closest('.wt-row').getAttribute('data-id'), e.target.checked)
+})
+// Arrastrar y soltar para reordenar
+wtList.addEventListener('dragstart', function (e) {
+  var r = e.target.closest('.wt-row'); if (!r) return
+  WT.dragId = r.getAttribute('data-id'); r.classList.add('dragging')
+  e.dataTransfer.effectAllowed = 'move'
+  try { e.dataTransfer.setData('text/plain', WT.dragId) } catch (x) {}
+})
+wtList.addEventListener('dragend', function () {
+  WT.dragId = null
+  wtList.querySelectorAll('.wt-row').forEach(function (r) { r.classList.remove('dragging', 'drop-above', 'drop-below') })
+})
+wtList.addEventListener('dragover', function (e) {
+  var r = e.target.closest('.wt-row'); if (!r || !WT.dragId) return
+  e.preventDefault()
+  var rect = r.getBoundingClientRect(), above = e.clientY < rect.top + rect.height / 2
+  wtList.querySelectorAll('.wt-row').forEach(function (x) { x.classList.remove('drop-above', 'drop-below') })
+  if (r.getAttribute('data-id') !== WT.dragId) r.classList.add(above ? 'drop-above' : 'drop-below')
+})
+wtList.addEventListener('drop', function (e) {
+  var r = e.target.closest('.wt-row'); if (!r || !WT.dragId) return
+  e.preventDefault()
+  var target = r.getAttribute('data-id'), moving = WT.dragId
+  if (target === moving) return
+  var above = r.classList.contains('drop-above')
+  var ids = wtLive().map(function (t) { return String(t.id) }).filter(function (x) { return x !== moving })
+  ids.splice(ids.indexOf(target) + (above ? 0 : 1), 0, moving)
+  WT.dragId = null
+  wtSaveOrder(ids.map(function (x) { return wtById(x).id }), moving)
+})
+
+/* ── Editor ── */
+var wtDialog = document.getElementById('wt-dialog'), wtForm = document.getElementById('wt-form')
+
+function openWashEditor(id) {
+  if (!WT.sizes.length) { RAB.toast('No hay tamaños de vehículo configurados', 'error'); return }
+  WT.editingId = id
+  WT.pendingImage = null
+  WT.removeImage = false
+  var live = wtLive()
+  var src = id ? wtById(id) : {
+    name: '', description: '', duration_minutes: 60, prices: {}, features: [], icon: 'drop',
+    image_url: null, badge: null, featured: false, active: true, requires_deposit: false, sort_order: live.length + 1,
+  }
+  WT.draft = JSON.parse(JSON.stringify(src))
+  WT.draft.position = id ? live.findIndex(function (t) { return String(t.id) === String(id) }) + 1 : live.length + 1
+  document.getElementById('wt-dlg-title').textContent = id ? 'Editar lavado' : 'Nuevo tipo de lavado'
+  document.getElementById('wt-save').textContent = id ? 'Guardar cambios' : 'Crear lavado'
+  renderWashEditor({})
+  document.getElementById("wt-overlay").hidden = false
+  wtDialog.show()
+  setTimeout(function () { var n = document.getElementById('wt-name'); if (n) n.focus() }, 60)
+}
+// Panel no modal (show) para que los avisos y la carga global queden por encima
+function closeWashEditor() { if (wtDialog.open) wtDialog.close() }
+wtDialog.addEventListener('close', function () { document.getElementById('wt-overlay').hidden = true })
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && wtDialog.open && !document.querySelector('.rab-modal-overlay')) closeWashEditor()
+})
+
+function wtBadgeMode(d) { return !d.badge ? 'none' : d.badge === 'Más popular' ? 'popular' : d.badge === 'Nuevo' ? 'nuevo' : 'custom' }
+
+function renderWashEditor(errs) {
+  var d = WT.draft, bm = d._badgeMode || wtBadgeMode(d)
+  var total = wtLive().length + (WT.editingId ? 0 : 1)
+  function err(k) { return errs[k] ? '<span class="wt-err" id="wt-e-' + k + '">' + errs[k] + '</span>' : '' }
+  function inv(k) { return errs[k] ? ' aria-invalid="true" aria-describedby="wt-e-' + k + '"' : '' }
+  var hasImage = !!(WT.pendingImage || (d.image_url && !WT.removeImage))
+
+  wtForm.innerHTML =
+    '<div class="wt-fs"><p class="form-subhead">Información</p>' +
+      '<div class="form-group"><label class="form-label" for="wt-name">Nombre</label><input class="form-input" id="wt-name" maxlength="60" value="' + RAB.esc(d.name) + '"' + inv('name') + ' placeholder="Ej: Lavado Premium">' + err('name') + '</div>' +
+      '<div class="form-group"><label class="form-label" for="wt-desc">Descripción corta</label><textarea class="form-textarea" id="wt-desc" maxlength="160" rows="2"' + inv('desc') + ' placeholder="Una frase que explique el lavado">' + RAB.esc(d.description) + '</textarea><span class="wt-hintx"><span id="wt-desc-count">' + (d.description || '').length + '</span>/160</span>' + err('desc') + '</div>' +
+    '</div>' +
+    '<div class="wt-fs"><p class="form-subhead">Precios por tamaño (CLP)</p><div class="wt-row2">' +
+      WT.sizes.map(function (s) {
+        return '<div class="form-group"><label class="form-label" for="wt-p-' + s.id + '">' + RAB.esc(s.name) + '</label><div class="wt-money"><input class="form-input" id="wt-p-' + s.id + '" data-price="' + s.id + '" inputmode="numeric" value="' + RAB.esc(d.prices[s.id] || '') + '"' + inv('p_' + s.id) + '></div>' + err('p_' + s.id) + '</div>'
+      }).join('') +
+    '</div></div>' +
+    '<div class="wt-fs"><p class="form-subhead">Agenda</p><div class="wt-row2">' +
+      '<div class="form-group"><label class="form-label" for="wt-dur">Duración estimada</label><select class="form-select" id="wt-dur">' +
+        WT_DURATIONS.map(function (m) { return '<option value="' + m + '"' + (m === d.duration_minutes ? ' selected' : '') + '>' + RAB.duration(m) + '</option>' }).join('') +
+      '</select><span class="wt-hintx">Se usará para calcular las horas disponibles en la agenda.</span></div>' +
+      '<div class="form-group"><span class="form-label">Abono</span><label class="switch-field"><span class="switch"><input type="checkbox" id="wt-dep"' + (d.requires_deposit ? ' checked' : '') + '><span class="switch-slider"></span></span><span class="switch-text">Requiere abono para reservar</span></label></div>' +
+    '</div></div>' +
+    '<div class="wt-fs"><p class="form-subhead">Cualidades incluidas</p>' +
+      '<div class="wt-feats" id="wt-feats">' + (d.features.length ? d.features.map(function (f, i) {
+        return '<span class="wt-chip"><span>' + RAB.esc(f) + '</span><button type="button" data-rmf="' + i + '" aria-label="Quitar ' + RAB.esc(f) + '"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>'
+      }).join('') : '<span class="wt-hintx">Aún no hay cualidades.</span>') + '</div>' +
+      '<div class="wt-add"><input class="form-input" id="wt-feat" maxlength="60" placeholder="Ej: Encerado a mano" aria-label="Nueva cualidad"><button type="button" class="btn-primary btn-sky btn-sm" id="wt-add-feat">Agregar</button></div>' + err('feat') +
+    '</div>' +
+    '<div class="wt-fs"><p class="form-subhead">Imagen o ícono</p>' +
+      '<div class="wt-upload"><label class="btn-ghost" for="wt-img" style="cursor:pointer">' + (hasImage ? 'Cambiar imagen' : 'Subir imagen') + '</label><input type="file" id="wt-img" accept="image/*" style="position:absolute;opacity:0;width:1px;height:1px">' +
+        (hasImage ? '<button type="button" class="btn-ghost" id="wt-rm-img">Quitar imagen</button>' : '<span class="wt-hintx">Sin imagen se muestra el ícono elegido.</span>') + '</div>' +
+      '<div class="wt-icons" role="group" aria-label="Ícono">' + Object.keys(RAB.WASH_ICONS).map(function (k) {
+        return '<button type="button" data-icon="' + k + '" aria-pressed="' + (k === d.icon) + '" aria-label="Ícono ' + k + '">' + RAB.washIcon(k, 24) + '</button>'
+      }).join('') + '</div>' +
+    '</div>' +
+    '<div class="wt-fs"><p class="form-subhead">Visualización</p><div class="wt-row2">' +
+      '<div class="form-group"><label class="form-label" for="wt-badge">Etiqueta</label><select class="form-select" id="wt-badge">' +
+        '<option value="none"' + (bm === 'none' ? ' selected' : '') + '>Sin etiqueta</option>' +
+        '<option value="popular"' + (bm === 'popular' ? ' selected' : '') + '>Más popular</option>' +
+        '<option value="nuevo"' + (bm === 'nuevo' ? ' selected' : '') + '>Nuevo</option>' +
+        '<option value="custom"' + (bm === 'custom' ? ' selected' : '') + '>Personalizada</option>' +
+      '</select></div>' +
+      (bm === 'custom' ? '<div class="form-group"><label class="form-label" for="wt-badge-t">Texto de la etiqueta</label><input class="form-input" id="wt-badge-t" maxlength="24" value="' + RAB.esc(d.badge || '') + '" placeholder="Ej: Protección 2 años"></div>' : '') +
+      '<div class="form-group"><label class="form-label" for="wt-pos">Posición en el sitio</label><input class="form-input" id="wt-pos" type="number" min="1" max="' + total + '" value="' + d.position + '"><span class="wt-hintx">1 = primero de ' + total + '</span></div>' +
+    '</div>' +
+    '<div class="wt-switches">' +
+      '<label class="switch-field"><span class="switch"><input type="checkbox" id="wt-featured"' + (d.featured ? ' checked' : '') + '><span class="switch-slider"></span></span><span class="switch-text">Destacado (borde naranja en el sitio)</span></label>' +
+      '<label class="switch-field"><span class="switch"><input type="checkbox" id="wt-active"' + (d.active ? ' checked' : '') + '><span class="switch-slider"></span></span><span class="switch-text">Activo (visible en el sitio)</span></label>' +
+    '</div></div>'
+  wtPreview()
+}
+
+function wtPreview() {
+  var d = WT.draft, p = JSON.parse(JSON.stringify(d))
+  p.prices = {}
+  WT.sizes.forEach(function (s) { p.prices[s.id] = Number(d.prices[s.id]) || 0 })
+  p.image_url = WT.pendingImage ? WT.pendingImage.dataUrl : (WT.removeImage ? null : d.image_url)
+  document.getElementById('wt-preview-card').innerHTML = RAB.washCard(p, WT.sizes[0], { preview: true, expanded: true })
+}
+
+function wtReadForm() {
+  var d = WT.draft
+  d.name = document.getElementById('wt-name').value
+  d.description = document.getElementById('wt-desc').value
+  document.getElementById('wt-desc-count').textContent = d.description.length
+  WT.sizes.forEach(function (s) { d.prices[s.id] = document.getElementById('wt-p-' + s.id).value.replace(/\D/g, '') })
+  d.duration_minutes = +document.getElementById('wt-dur').value
+  d.requires_deposit = document.getElementById('wt-dep').checked
+  d.featured = document.getElementById('wt-featured').checked
+  d.active = document.getElementById('wt-active').checked
+  d.position = +document.getElementById('wt-pos').value || d.position
+  var bt = document.getElementById('wt-badge-t')
+  if (bt) d.badge = bt.value
+}
+
+wtForm.addEventListener('input', function (e) {
+  if (e.target.id === 'wt-feat' || e.target.id === 'wt-img' || e.target.id === 'wt-badge') return
+  if (e.target.matches('[data-price]')) { var v = e.target.value.replace(/\D/g, ''); if (v !== e.target.value) e.target.value = v }
+  wtReadForm(); wtPreview()
+})
+wtForm.addEventListener('change', async function (e) {
+  if (e.target.id === 'wt-badge') {
+    wtReadForm()
+    var v = e.target.value
+    WT.draft._badgeMode = v
+    WT.draft.badge = v === 'none' ? null : v === 'popular' ? 'Más popular' : v === 'nuevo' ? 'Nuevo' : ''
+    renderWashEditor({})
+    var f = document.getElementById(v === 'custom' ? 'wt-badge-t' : 'wt-badge'); if (f) f.focus()
+    return
+  }
+  if (e.target.id === 'wt-img' && e.target.files && e.target.files[0]) {
+    var file = e.target.files[0]
+    if (!/^image\//.test(file.type)) { RAB.toast('"' + file.name + '" no es una imagen', 'error'); return }
+    if (file.size > 20 * 1024 * 1024) { RAB.toast('La imagen supera 20MB', 'error'); return }
+    wtReadForm()
+    try {
+      WT.pendingImage = await compressImage(file)
+      WT.removeImage = false
+      renderWashEditor({})
+    } catch (x) { RAB.toast('No se pudo leer la imagen', 'error') }
+  }
+})
+function wtAddFeature() {
+  var inp = document.getElementById('wt-feat'), v = inp.value.trim()
+  if (!v) { inp.focus(); return }
+  wtReadForm()
+  if (WT.draft.features.length >= 12) { renderWashEditor({ feat: 'Máximo 12 cualidades por lavado.' }); return }
+  WT.draft.features.push(v)
+  renderWashEditor({})
+  document.getElementById('wt-feat').focus()
+}
+wtForm.addEventListener('keydown', function (e) {
+  if (e.target.id === 'wt-feat' && e.key === 'Enter') { e.preventDefault(); wtAddFeature() }
+})
+wtForm.addEventListener('click', function (e) {
+  var b
+  if (e.target.closest('#wt-add-feat')) wtAddFeature()
+  else if ((b = e.target.closest('[data-rmf]'))) { wtReadForm(); WT.draft.features.splice(+b.getAttribute('data-rmf'), 1); renderWashEditor({}) }
+  else if ((b = e.target.closest('[data-icon]'))) {
+    wtReadForm(); WT.draft.icon = b.getAttribute('data-icon'); renderWashEditor({})
+    var f = wtForm.querySelector('[data-icon="' + WT.draft.icon + '"]'); if (f) f.focus()
+  }
+  else if (e.target.closest('#wt-rm-img')) { wtReadForm(); WT.pendingImage = null; WT.removeImage = true; renderWashEditor({}) }
+})
+
+wtForm.addEventListener('submit', async function (e) {
+  e.preventDefault()
+  wtReadForm()
+  var d = WT.draft, errs = {}, name = d.name.trim()
+  if (name.length < 2) errs.name = 'Escribe un nombre de al menos 2 caracteres.'
+  else if (WT.types.some(function (t) { return !t.archived_at && String(t.id) !== String(WT.editingId) && t.name.trim().toLowerCase() === name.toLowerCase() }))
+    errs.name = 'Ya existe un lavado con ese nombre. Usa otro.'
+  if (!d.description.trim()) errs.desc = 'Agrega una descripción corta; se muestra en la tarjeta.'
+  WT.sizes.forEach(function (s) { if (!(Number(d.prices[s.id]) > 0)) errs['p_' + s.id] = 'Ingresa un precio mayor a 0.' })
+  if (!d.features.length) errs.feat = 'Agrega al menos una cualidad incluida.'
+  if (Object.keys(errs).length) {
+    renderWashEditor(errs)
+    var first = wtForm.querySelector('[aria-invalid="true"]') || document.getElementById('wt-feat')
+    if (first) first.focus()
+    RAB.toast('Revisa los campos marcados', 'error')
+    return
+  }
+
+  var prices = {}
+  WT.sizes.forEach(function (s) { prices[s.id] = Number(d.prices[s.id]) })
+  var payload = {
+    name: name, description: d.description.trim(), duration_minutes: d.duration_minutes,
+    requires_deposit: d.requires_deposit, badge: (d.badge || '').trim() || null, icon: d.icon,
+    featured: d.featured, active: d.active, features: d.features, prices: prices,
+  }
+  var isNew = !WT.editingId
+  var saveBtn = document.getElementById('wt-save')
+  saveBtn.disabled = true
+  showGlobalLoading(isNew ? 'Creando lavado...' : 'Guardando cambios...')
+  try {
+    var saved = isNew
+      ? await RAB.api('/api/admin/wash-types', { method: 'POST', body: JSON.stringify(payload) })
+      : await RAB.api('/api/admin/wash-types/' + WT.editingId, { method: 'PUT', body: JSON.stringify(payload) })
+
+    if (WT.pendingImage) {
+      try {
+        await RAB.api('/api/admin/wash-types/' + saved.id + '/image', { method: 'POST', body: JSON.stringify({ base64: WT.pendingImage.base64, contentType: WT.pendingImage.contentType }) })
+      } catch (x) { RAB.toast('Se guardó el lavado, pero la imagen falló: ' + x.message, 'error') }
+    } else if (WT.removeImage && !isNew) {
+      await RAB.api('/api/admin/wash-types/' + saved.id + '/image', { method: 'DELETE' }).catch(function () {})
+    }
+
+    // Posición pedida en el sitio → reordenar si cambió
+    var ids = wtLive().map(function (t) { return String(t.id) }).filter(function (x) { return x !== String(saved.id) })
+    var pos = Math.max(1, Math.min(ids.length + 1, d.position)) - 1
+    var current = wtLive().findIndex(function (t) { return String(t.id) === String(saved.id) })
+    if (isNew ? pos !== ids.length : pos !== current) {
+      ids.splice(pos, 0, String(saved.id))
+      await RAB.api('/api/admin/wash-types/order', { method: 'PUT', body: JSON.stringify({ ids: ids.map(function (x) { return x === String(saved.id) ? saved.id : wtById(x).id }) }) })
+    }
+
+    wtDialog.close()
+    if (WT.filter === 'archived') WT.filter = 'all'
+    RAB.toast(isNew ? '"' + saved.name + '" creado' + (saved.active ? ' y publicado en el sitio' : ' (inactivo)') : 'Cambios guardados en "' + saved.name + '"')
+    await loadWashTypes(saved.id)
+  } catch (x) {
+    if (/nombre/i.test(x.message)) renderWashEditor({ name: x.message })
+    RAB.toast(x.message, 'error')
+  } finally { hideGlobalLoading(); saveBtn.disabled = false }
+})
 
 /* ══ GLOBAL LOADING ════════════════════════════════════════ */
 // opts opcional: { current, total } muestra una barra "X de Y"; { subtitle } añade texto descriptivo

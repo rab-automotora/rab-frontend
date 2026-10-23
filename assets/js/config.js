@@ -1,7 +1,7 @@
 // assets/js/config.js — RAB Automotora
 // Config central + helpers + renders de navbar/footer
 // "base" es la ruta relativa hacia la raíz: '' en index, '../' en subcarpetas
-console.log("V1.0.1");
+console.log("V1.1.0");
 const RAB = {
 
   // Backend URL — cambiar al desplegar
@@ -13,11 +13,16 @@ const RAB = {
   ADDRESS:  'Panamericana Sur Km 1505, Buin (al lado del BuinZoo)',
   GMAPS:    'https://maps.google.com/?q=-33.716,-70.729',
 
-  // ⚠️ Actualizar con el perfil real de la cuenta
-  INSTAGRAM: {
-    handle: '@rabautomotora',
-    url:    'https://www.instagram.com/rabautomotora/',
-  },
+  // ─── Redes sociales ─────────────────────────────────────────
+  // Se dibujan en orden. Para agregar otra red (facebook, youtube) basta con
+  // sumar un objeto { key, label, handle, url }. 'video' muestra un reel en la sección.
+  // ⚠️ Confirmar el usuario real de TikTok antes de publicar.
+  SOCIALS: [
+    { key: 'instagram', label: 'Instagram',   handle: '@rabautomotora', url: 'https://www.instagram.com/rabautomotora/', video: '/assets/videos/REEL.mp4' },
+    { key: 'tiktok',    label: 'TikTok',      handle: '@rabautomotora', url: 'https://www.tiktok.com/@rabautomotora' },
+    { key: 'whatsapp',  label: 'WhatsApp',    handle: '+56 9 6491 8228' },
+    { key: 'maps',      label: 'Cómo llegar', handle: 'Panamericana Sur Km 1505, Buin' },
+  ],
 
   SCHEDULE: [
     { day: 'Lunes a Viernes', hours: '9:00 – 19:00' },
@@ -26,32 +31,6 @@ const RAB = {
   ],
 
   CATEGORIES: ['Todos', 'Sedán', 'SUV', 'Pickup', 'Hatchback', 'Deportivo'],
-
-  // ─── Datos fallback de lavado (se usa si la API no responde) ─
-  WASHING: {
-    Standard: {
-      label: 'Lavado Standard',
-      desc:  'Limpieza exterior y protección básica',
-      features: ['Lavado exterior', 'Aspirado interior', 'Limpieza vidrios', 'Protección básica'],
-      prices: [
-        { size: 'Auto / Hatchback',                   price: 15000 },
-        { size: 'SUV / Crossover',                    price: 17000 },
-        { size: 'Extra Grande (SUV XL / Station)',    price: 21000 },
-        { size: 'Super Grande (Pickup / Camioneta)',  price: 25000 },
-      ],
-    },
-    Premium: {
-      label: 'Lavado Premium',
-      desc:  'Servicio integral con limpieza profunda',
-      features: ['Lavado exterior detallado', 'Limpieza profunda interior', 'Limpieza de chasis', 'Encerado', 'Aromas'],
-      prices: [
-        { size: 'Auto / Hatchback',                   price: 20000 },
-        { size: 'SUV / Crossover',                    price: 23000 },
-        { size: 'Extra Grande (SUV XL / Station)',    price: 28000 },
-        { size: 'Super Grande (Pickup / Camioneta)',  price: 31000 },
-      ],
-    },
-  },
 
   // ─── Helpers ──────────────────────────────────────────────
   price(n) { return '$' + Number(n).toLocaleString('es-CL') },
@@ -141,7 +120,7 @@ const RAB = {
     this._refreshPromise = (async function () {
       try {
         if (!refresh) throw new Error('sin refresh token')
-        const res = await fetch(self.API_URL + '/api/admin/refresh', {
+        const res = await self._fetchColdStart(self.API_URL + '/api/admin/refresh', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refresh_token: refresh })
@@ -158,6 +137,42 @@ const RAB = {
     return this._refreshPromise
   },
 
+  // Espera entre reintentos por cold-start (backend dormido tras inactividad,
+  // ej. Render free tier). Suma ~51s, tiempo típico para que el contenedor levante.
+  _COLD_START_DELAYS: [1000, 2000, 4000, 6000, 8000, 10000, 10000, 10000],
+  _coldStartNotified: false,
+
+  // fetch() con reintento automático cuando el backend está "dormido":
+  // - la petición falla a nivel de red (contenedor aún no acepta conexiones), o
+  // - responde 502/503/504 (el proxy contesta mientras el contenedor levanta).
+  // En esos casos el request nunca llegó a ejecutarse en la app, así que
+  // reintentar es seguro (no duplica efectos de POST/PUT/DELETE).
+  async _fetchColdStart(url, fetchOpts, attempt) {
+    attempt = attempt || 0
+    let res
+    try {
+      res = await fetch(url, fetchOpts)
+    } catch (networkErr) {
+      if (attempt >= this._COLD_START_DELAYS.length) throw networkErr
+      this._notifyColdStart()
+      await new Promise(function (r) { setTimeout(r, RAB._COLD_START_DELAYS[attempt]) })
+      return this._fetchColdStart(url, fetchOpts, attempt + 1)
+    }
+    if ((res.status === 502 || res.status === 503 || res.status === 504) && attempt < this._COLD_START_DELAYS.length) {
+      this._notifyColdStart()
+      await new Promise(function (r) { setTimeout(r, RAB._COLD_START_DELAYS[attempt]) })
+      return this._fetchColdStart(url, fetchOpts, attempt + 1)
+    }
+    this._coldStartNotified = false
+    return res
+  },
+
+  _notifyColdStart() {
+    if (this._coldStartNotified) return
+    this._coldStartNotified = true
+    this.toast('El servidor estaba inactivo, despertando… puede tardar unos segundos', 'success')
+  },
+
   async api(path, opts) {
     opts = opts || {}
     // Refresh proactivo: si el access_token está por vencer, renuévalo antes de pedir.
@@ -167,7 +182,7 @@ const RAB = {
     const token = this.getToken()
     const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {})
     if (token) headers['Authorization'] = 'Bearer ' + token
-    const res = await fetch(this.API_URL + path, Object.assign({}, opts, { headers }))
+    const res = await this._fetchColdStart(this.API_URL + path, Object.assign({}, opts, { headers }))
     if (!res.ok) {
       if (res.status === 401 && token) {
         // Refresh reactivo: intenta renovar UNA vez y reintenta la misma petición.
@@ -202,7 +217,8 @@ const RAB = {
 
   // Modal de confirmación/alerta estándar del sitio.
   // Devuelve Promise<boolean>: true = confirmar, false = cancelar.
-  // opts: { title, message, confirmText, cancelText, danger, alert }
+  // opts: { title, message, confirmText, cancelText, altText, danger, alert }
+  // Con altText se muestra un tercer botón y la promesa resuelve 'alt' al elegirlo.
   confirm(opts) {
     opts = opts || {}
     return new Promise(function (resolve) {
@@ -224,6 +240,7 @@ const RAB = {
           (opts.message ? '<p class="rab-modal-msg">' + opts.message + '</p>' : '') +
           '<div class="rab-modal-actions">' +
             (isAlert ? '' : '<button type="button" class="rab-modal-btn rab-modal-cancel">' + (opts.cancelText || 'Cancelar') + '</button>') +
+            (opts.altText ? '<button type="button" class="rab-modal-btn rab-modal-alt">' + opts.altText + '</button>' : '') +
             '<button type="button" class="rab-modal-btn rab-modal-confirm' + (danger ? ' danger' : '') + '">' + (opts.confirmText || (isAlert ? 'Entendido' : 'Confirmar')) + '</button>' +
           '</div>' +
         '</div>'
@@ -243,6 +260,8 @@ const RAB = {
       }
       var cancelBtn = overlay.querySelector('.rab-modal-cancel')
       if (cancelBtn) cancelBtn.addEventListener('click', function () { close(false) })
+      var altBtn = overlay.querySelector('.rab-modal-alt')
+      if (altBtn) altBtn.addEventListener('click', function () { close('alt') })
       overlay.querySelector('.rab-modal-confirm').addEventListener('click', function () { close(true) })
       overlay.addEventListener('click', function (e) { if (e.target === overlay) close(false) })
       document.addEventListener('keydown', onKey)
@@ -401,27 +420,74 @@ const RAB = {
     btn.innerHTML = this.volumeSVG(!video.muted, 16)
   },
 
-  // CTA "Síguenos en Instagram" — sin datos externos, botón con degradado de marca IG
-  renderInstagram() {
-    const ig = this.INSTAGRAM
-    return '<div class="ig-cta reveal">' +
-      '<div class="ig-media">' +
-        '<div class="ig-glow"></div>' +
-        '<div class="ig-reel">' +
-          '<video src="/assets/videos/REEL.mp4" autoplay muted loop playsinline preload="metadata" disablepictureinpicture aria-label="Reel de Instagram de RAB Automotora"></video>' +
-          '<button type="button" class="ig-mute" aria-label="Activar sonido" aria-pressed="false" onclick="RAB.toggleReelSound(this)">' + this.volumeSVG(false, 16) + '</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="ig-copy">' +
-        '<div class="ig-glyph">' + this.igSVG(30) + '</div>' +
+  // Íconos de marca (TikTok, mapa) — rellenos con currentColor
+  brandSVG(key, s) {
+    s = s || 20
+    if (key === 'instagram') return this.igSVG(s)
+    if (key === 'whatsapp')  return this.waSVG(s)
+    var paths = {
+      tiktok:   'M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48z',
+      maps:     'M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z',
+      facebook: 'M14 8h3V4h-3c-2.76 0-5 2.24-5 5v2H7v4h2v7h4v-7h3l1-4h-4V9c0-.55.45-1 1-1z',
+      youtube:  'M23 7.5a3 3 0 0 0-2.1-2.1C19 5 12 5 12 5s-7 0-8.9.4A3 3 0 0 0 1 7.5 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.5a3 3 0 0 0 2.1 2.1C5 19 12 19 12 19s7 0 8.9-.4a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.5 31 31 0 0 0-.4-4.5zM9.75 15.02V8.98L15.5 12l-5.75 3.02z',
+    }
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="' + (paths[key] || paths.maps) + '"/></svg>'
+  },
+
+  // URL final de cada red (WhatsApp y Maps salen de la config general)
+  socialUrl(s) {
+    if (s.key === 'whatsapp') return this.wa('Hola RAB, ¿me pueden ayudar? Escribo desde la web.')
+    if (s.key === 'maps')     return this.GMAPS
+    return s.url
+  },
+
+  // Sección unificada de redes: reel de Instagram + tarjeta de TikTok + botones grandes
+  renderSocials() {
+    const self = this
+    const ig = this.SOCIALS.find(function (s) { return s.key === 'instagram' })
+    const tt = this.SOCIALS.find(function (s) { return s.key === 'tiktok' })
+    const arrow = '<svg class="soc-go" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+
+    function phone(s, cls) {
+      if (!s) return ''
+      if (s.video) {
+        return '<div class="phone ' + cls + '">' +
+          '<span class="phone-tag">' + s.label + '</span>' +
+          '<video src="' + s.video + '" autoplay muted loop playsinline preload="metadata" disablepictureinpicture aria-label="Video de ' + s.label + ' de RAB Automotora"></video>' +
+          '<button type="button" class="ig-mute" aria-label="Activar sonido" aria-pressed="false" onclick="RAB.toggleReelSound(this)">' + self.volumeSVG(false, 16) + '</button>' +
+        '</div>'
+      }
+      return '<a class="phone ' + cls + '" href="' + s.url + '" target="_blank" rel="noopener" aria-label="Ver ' + s.label + ' de RAB">' +
+        '<span class="phone-screen">' +
+          '<span class="phone-tag">' + s.label + '</span>' +
+          '<span class="tt-glitch">Antes / Después</span>' +
+          '<span class="tt-car" aria-hidden="true"></span>' +
+          '<span class="tt-who">' + self.brandSVG(s.key, 14) + s.handle + '</span>' +
+          '<span class="tt-cap">Lavados, entregas y nuevos ingresos.</span>' +
+        '</span>' +
+      '</a>'
+    }
+
+    const buttons = this.SOCIALS.map(function (s) {
+      return '<a class="soc soc-' + s.key + '" href="' + self.socialUrl(s) + '" target="_blank" rel="noopener">' +
+        '<span class="soc-ic">' + self.brandSVG(s.key, 22) + '</span>' +
+        '<span class="soc-t"><b>' + s.label + '</b><span>' + s.handle + '</span></span>' + arrow +
+      '</a>'
+    }).join('')
+
+    return '<div class="social-wrap">' +
+      '<div class="phones reveal">' + phone(ig, 'phone-ig') + phone(tt, 'phone-tt') + '</div>' +
+      '<div class="reveal" style="--reveal-delay:100ms">' +
         '<p class="label-tag">Redes sociales</p>' +
-        '<h2 class="section-title" style="margin-top:.4rem">Descubre nuestro Instagram</h2>' +
-        '<p class="ig-message">Mira lo que compartimos día a día: nuevos ingresos, novedades y contenido exclusivo. Síguenos y no te pierdas el próximo vehículo que podría ser tuyo.</p>' +
-        '<a href="' + ig.url + '" target="_blank" rel="noopener" class="btn-instagram">' + this.igSVG(18) + 'Seguir en Instagram</a>' +
-        '<div class="ig-handle">' + ig.handle + '</div>' +
+        '<h2 class="section-title">Síguenos en todas</h2>' +
+        '<p class="section-lead">Nuevos ingresos en Instagram, el antes y después de cada lavado en TikTok, y respuesta directa por WhatsApp.</p>' +
+        '<div class="soc-buttons">' + buttons + '</div>' +
       '</div>' +
     '</div>'
   },
+
+  // Compatibilidad: páginas antiguas que aún llamen a renderInstagram()
+  renderInstagram() { return this.renderSocials() },
 
   // Navbar — activePage: 'Inicio'|'Inventario'|'Lavado'|'Nosotros'
   // Rutas absolutas — funcionan igual desde cualquier subcarpeta
@@ -434,7 +500,7 @@ const RAB = {
       { label: 'Nosotros',   href: '/nosotros/index.html' },
     ]
     const linksHtml = links.map(function (l) {
-      return '<a href="' + l.href + '"' + (activePage === l.label ? ' style="color:#fff"' : '') + '>' + l.label + '</a>'
+      return '<a href="' + l.href + '"' + (activePage === l.label ? ' aria-current="page"' : '') + '>' + l.label + '</a>'
     }).join('')
     const mobileHtml = links.map(function (l) {
       return '<a href="' + l.href + '" onclick="document.getElementById(\'mobile-menu\').classList.remove(\'open\')">' + l.label + '</a>'
@@ -443,32 +509,37 @@ const RAB = {
     return '<nav class="navbar" id="navbar">' +
       '<a href="/index.html" class="navbar-logo"><img src="/assets/images/logo.png" alt="RAB Automotora"></a>' +
       '<div class="navbar-links">' + linksHtml +
-        '<a href="' + self.wa() + '" target="_blank" class="btn-nav-cta">Contáctanos</a>' +
+        '<a href="' + self.wa() + '" target="_blank" rel="noopener" class="btn-nav-wa" aria-label="Escríbenos por WhatsApp">' + self.waSVG(18) + '</a>' +
+        '<a href="/index.html#lavado" class="btn-nav-cta">Agendar lavado</a>' +
       '</div>' +
       '<button class="navbar-hamburger" onclick="document.getElementById(\'mobile-menu\').classList.toggle(\'open\')" aria-label="Menú">' +
-        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>' +
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>' +
       '</button>' +
     '</nav>' +
     '<div class="navbar-mobile" id="mobile-menu">' + mobileHtml +
-      '<a href="' + self.wa() + '" target="_blank" class="btn-nav-cta" style="justify-content:center;margin-top:8px">Contáctanos</a>' +
+      '<a href="/index.html#lavado" class="btn-nav-cta" style="margin-top:10px" onclick="document.getElementById(\'mobile-menu\').classList.remove(\'open\')">Agendar lavado</a>' +
     '</div>'
   },
 
   renderFooter() {
     const self = this
     const schedHtml = this.SCHEDULE.map(function (s) {
-      const color = s.hours === 'Cerrado' ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.7)'
+      const color = s.hours === 'Cerrado' ? 'rgba(255,255,255,.35)' : 'var(--white)'
       return '<div class="footer-schedule-row">' +
         '<span class="footer-schedule-day">' + s.day + '</span>' +
         '<span class="footer-schedule-hours" style="color:' + color + '">' + s.hours + '</span>' +
       '</div>'
+    }).join('')
+    const socialHtml = this.SOCIALS.filter(function (s) { return s.key !== 'maps' }).map(function (s) {
+      return '<a href="' + self.socialUrl(s) + '" target="_blank" rel="noopener" aria-label="' + s.label + '">' + self.brandSVG(s.key, 18) + '</a>'
     }).join('')
 
     return '<footer class="footer"><div class="container">' +
       '<div class="footer-grid">' +
         '<div>' +
           '<img src="/assets/images/logo.png" alt="RAB" class="footer-logo">' +
-          '<p class="footer-desc">Real Automotora Becerra. Vehículos seleccionados, servicio honesto y calidad garantizada en Buin.</p>' +
+          '<p class="footer-desc">Real Automotora Becerra. Vehículos seleccionados, servicio honesto y lavado de detalle en Buin.</p>' +
+          '<div class="footer-social">' + socialHtml + '</div>' +
         '</div>' +
         '<div>' +
           '<p class="footer-heading">Navegación</p>' +
@@ -492,7 +563,7 @@ const RAB = {
             '<div class="footer-contact-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>' + self.ADDRESS + '</span></div>' +
             '<div class="footer-contact-item">' + self.waSVG(14) + '<span>+56 9 6491 8228</span></div>' +
           '</div>' +
-          '<a href="' + self.wa() + '" target="_blank" class="btn-whatsapp" style="margin-top:1rem;font-size:12px;padding:8px 16px">' + self.waSVG(13) + 'Cotizar ahora</a>' +
+          '<a href="' + self.wa() + '" target="_blank" rel="noopener" class="btn-whatsapp" style="margin-top:1.1rem">' + self.waSVG(14) + 'Cotizar ahora</a>' +
         '</div>' +
       '</div>' +
       '<div class="footer-bottom">' +
@@ -502,71 +573,175 @@ const RAB = {
     '</div></footer>'
   },
 
-  // Render sección completa de lavado
-  // plans: optional array from DB [{title, subtitle, prices, features, sort_order, recommended}]
-  // Falls back to static WASHING data if plans is not provided or has fewer than 2 items
-  renderWashing(plans) {
-    const self = this
-    let planList
+  // ─── Catálogo de lavados (dinámico, N tipos) ────────────────
+  // Íconos disponibles para un tipo sin imagen. Deben coincidir con ICONS del backend.
+  WASH_ICONS: {
+    drop:    '<path d="M12 2.5S5.5 10 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 10 12 2.5 12 2.5z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/>',
+    bolt:    '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+    seat:    '<path d="M7 4h6a2 2 0 0 1 2 2v7H7z"/><path d="M5 13h12l2 4H5z"/><path d="M7 17v3M17 17v3"/>',
+    shield:  '<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+    wheel:   '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/>',
+    engine:  '<path d="M4 9h3l2-2h5l2 2h2v3h2v-2h1v6h-1v-2h-2v3h-3l-2 2H9l-2-2H4z"/>',
+    sun:     '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    star:    '<path d="M12 2l2.9 6.3 6.9.9-5 4.8 1.3 6.9L12 17.6 5.9 20.9 7.2 14l-5-4.8 6.9-.9z"/>',
+  },
+  washIcon(key, s) {
+    s = s || 24
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (this.WASH_ICONS[key] || this.WASH_ICONS.drop) + '</svg>'
+  },
+  esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    })
+  },
+  duration(min) {
+    var h = Math.floor(min / 60), m = min % 60
+    return h ? h + ' h' + (m ? ' ' + m + ' min' : '') : m + ' min'
+  },
+  DEPOSIT_TEXT: 'Requiere abono',
 
-    if (plans && plans.length >= 2) {
-      planList = plans.slice().sort(function (a, b) { return a.sort_order - b.sort_order })
-        .map(function (p) {
-          return { label: p.title, desc: p.subtitle, features: p.features || [], prices: p.prices || [], recommended: !!p.recommended }
-        })
-    } else {
-      planList = [
-        { label: self.WASHING.Standard.label, desc: self.WASHING.Standard.desc, features: self.WASHING.Standard.features, prices: self.WASHING.Standard.prices, recommended: false },
-        { label: self.WASHING.Premium.label,  desc: self.WASHING.Premium.desc,  features: self.WASHING.Premium.features,  prices: self.WASHING.Premium.prices,  recommended: true  },
-      ]
-    }
+  // Tarjeta de un tipo de lavado.
+  // t: { id, name, description, duration_minutes, prices{size:price}, features[], icon, image_url,
+  //      badge, featured, requires_deposit }  ·  size: { id, name }
+  // opts: { index, expanded, preview }  (preview = sin enlaces, para el editor del backoffice)
+  washCard(t, size, opts) {
+    opts = opts || {}
+    var self = this, esc = this.esc
+    var price = (t.prices && t.prices[size.id]) || 0
+    var feats = t.features || []
+    var shown = opts.expanded ? feats : feats.slice(0, 4)
+    var more  = feats.length - shown.length
+    var check = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>'
+    var clock = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+    var ribbonCls = t.badge === 'Más popular' ? ' hot' : t.badge === 'Nuevo' ? ' new' : ''
+    var media = t.image_url
+      ? '<img src="' + esc(t.image_url) + '" alt="" loading="lazy" decoding="async">'
+      : '<span class="wash-ico">' + this.washIcon(t.icon, 76) + '</span>'
+    var msg = 'Hola, quiero agendar un lavado *' + t.name + '* para ' + size.name + '. ¿Tienen disponibilidad?'
+    var cta = opts.preview
+      ? '<span class="btn-turbo btn-sm">Agendar</span>'
+      : '<a class="btn-turbo btn-sm" href="' + this.wa(msg) + '" target="_blank" rel="noopener" data-wash-cta="' + esc(t.id) + '">' + this.waSVG(14) + 'Agendar</a>'
 
-    function renderCard(plan, isPremium) {
-      const planKey = isPremium ? 'Premium' : 'Standard'
-      const waMsg = 'Hola, quiero agendar un lavado *' + planKey + '*. ¿Tienen disponibilidad?'
-      const waUrl = 'https://wa.me/' + self.WHATSAPP + '?text=' + encodeURIComponent(waMsg)
-      const suffix = isPremium ? 'premium' : 'standard'
+    return '<article class="wash-card' + (t.featured ? ' is-featured' : '') + (opts.preview ? '' : ' reveal') + '"' +
+        ' style="--reveal-delay:' + (Math.min(opts.index || 0, 5) * 70) + 'ms" data-wash-id="' + esc(t.id) + '">' +
+      '<div class="wash-media' + (t.image_url ? ' has-img' : '') + '">' +
+        (t.badge ? '<span class="wash-ribbon' + ribbonCls + '">' + esc(t.badge) + '</span>' : '') + media +
+        '<span class="wash-dur">' + clock + esc(this.duration(t.duration_minutes || 60)) + '</span>' +
+      '</div>' +
+      '<div class="wash-body">' +
+        '<h3 class="wash-name">' + (esc(t.name) || 'Sin nombre') + '</h3>' +
+        '<p class="wash-desc">' + esc(t.description) + '</p>' +
+        (t.requires_deposit ? '<span class="wash-chip">' + this.DEPOSIT_TEXT + '</span>' : '') +
+        '<ul class="wash-feats">' + shown.map(function (f) { return '<li>' + check + '<span>' + esc(f) + '</span></li>' }).join('') + '</ul>' +
+        (more > 0 ? '<button type="button" class="wash-more" data-wash-more="' + esc(t.id) + '">+' + more + ' más incluido' + (more > 1 ? 's' : '') + '</button>' : '') +
+        '<div class="wash-foot">' +
+          '<div class="wash-price"><small>' + esc(size.name) + '</small><strong data-v="' + price + '">' + self.price(price) + '</strong></div>' +
+          cta +
+        '</div>' +
+      '</div>' +
+    '</article>'
+  },
 
-      const icon = isPremium
-        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
-        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 22v-6M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h6M22 12h-6M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24"/></svg>'
+  // Monta la sección de lavados: pide GET /api/wash-types y dibuja selector de tamaño + tarjetas.
+  // els: { grid, seg, label, swipe } (ids). El tipo elegido llega al agendamiento por WhatsApp
+  // con su nombre y el tamaño seleccionado.
+  async mountWashTypes(els) {
+    var self = this
+    var grid  = document.getElementById(els.grid)
+    var seg   = document.getElementById(els.seg)
+    var label = document.getElementById(els.label)
+    var swipe = els.swipe && document.getElementById(els.swipe)
+    if (!grid) return
+    var state = { types: [], sizes: [], size: null, expanded: {} }
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-      const pricesHtml = plan.prices.map(function (row) {
-        return '<div class="wash-price-row">' +
-          '<span class="wash-price-size">' + row.size + '</span>' +
-          '<span class="wash-price-value wash-price-value-' + suffix + '">' + self.price(row.price) + '</span>' +
+    grid.innerHTML = Array(3).fill('<div class="skeleton-card"><div class="skeleton" style="height:150px;border-radius:0"></div><div style="padding:1.1rem"><div class="skeleton" style="height:20px;width:60%;margin-bottom:10px"></div><div class="skeleton" style="height:12px;margin-bottom:8px"></div><div class="skeleton" style="height:12px;width:80%"></div></div></div>').join('')
+
+    function sizeObj() { return state.sizes.find(function (s) { return s.id === state.size }) || state.sizes[0] }
+    function cols(n) { return n <= 3 ? n : (n === 4 || n === 7 || n === 8) ? 4 : 3 }
+
+    function render() {
+      var list = state.types
+      grid.classList.toggle('one', list.length === 1)
+      if (swipe) swipe.classList.toggle('on', list.length > 1)
+      if (!list.length || !state.sizes.length) {
+        grid.style.removeProperty('--cols')
+        if (seg) seg.parentNode.style.display = 'none'
+        grid.innerHTML = '<div class="wash-empty">' +
+          '<span class="drop">' + self.washIcon('drop', 72) + '</span>' +
+          '<h3 class="display" style="font-size:1.6rem">Estamos preparando nuevos lavados</h3>' +
+          '<p>Por ahora no hay lavados publicados. Escríbenos y te ayudamos a coordinar el tuyo.</p>' +
+          '<a class="btn-whatsapp" href="' + self.wa('Hola RAB, quiero consultar por un lavado.') + '" target="_blank" rel="noopener">' + self.waSVG(15) + 'Consultar por WhatsApp</a>' +
         '</div>'
-      }).join('')
-
-      const featsHtml = plan.features.map(function (f) {
-        return '<span class="wash-feature">' +
-          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5FC2DA" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' + f +
-        '</span>'
-      }).join('')
-
-      return '<div class="wash-card reveal" style="--reveal-delay:' + (isPremium ? '120' : '0') + 'ms">' +
-        '<div class="wash-header wash-header-' + suffix + '">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-            '<div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center">' + icon + '</div>' +
-            (plan.recommended ? '<div class="badge-recommended"><div class="badge-dot"></div>Recomendado</div>' : '') +
-          '</div>' +
-          '<div class="wash-plan-name">' + plan.label + '</div>' +
-          '<div class="wash-plan-desc wash-plan-desc-' + suffix + '">' + plan.desc + '</div>' +
-        '</div>' +
-        '<div class="wash-prices wash-prices-' + suffix + '">' +
-          '<p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.3);margin-bottom:.75rem">Precio por tamaño</p>' +
-          pricesHtml +
-        '</div>' +
-        '<div class="wash-features">' + featsHtml + '</div>' +
-        '<div class="wash-cta">' +
-          '<a href="' + waUrl + '" target="_blank" class="' + (isPremium ? 'btn-gold' : 'btn-primary') + '" style="width:100%;justify-content:center;font-size:13px;padding:12px 20px">' +
-            self.waSVG(15) + 'Agendar ' + planKey +
-          '</a>' +
-        '</div>' +
-      '</div>'
+        return
+      }
+      if (seg) seg.parentNode.style.display = ''
+      grid.style.setProperty('--cols', cols(list.length))
+      var s = sizeObj()
+      grid.innerHTML = list.map(function (t, i) { return self.washCard(t, s, { index: i, expanded: state.expanded[t.id] }) }).join('')
+      self.initReveal()
     }
 
-    return renderCard(planList[0], false) + renderCard(planList[1], true)
+    function renderSeg() {
+      if (!seg) return
+      seg.innerHTML = '<span class="seg-ind"></span>' + state.sizes.map(function (s) {
+        return '<button type="button" data-size="' + self.esc(s.id) + '" aria-pressed="' + (s.id === state.size) + '" title="' + self.esc(s.name) + '">' + self.esc(s.short_name || s.name) + '</button>'
+      }).join('')
+      moveInd()
+    }
+    function moveInd() {
+      if (!seg) return
+      var b = seg.querySelector('[aria-pressed="true"]'), ind = seg.querySelector('.seg-ind')
+      if (b && ind) { ind.style.width = b.offsetWidth + 'px'; ind.style.transform = 'translateX(' + b.offsetLeft + 'px)' }
+      if (label && sizeObj()) label.innerHTML = 'Precios para <b>' + self.esc(sizeObj().name) + '</b>'
+    }
+
+    // Cambio de tamaño: actualiza precios con animación y los enlaces de agendar
+    function updatePrices() {
+      var s = sizeObj()
+      grid.querySelectorAll('.wash-card').forEach(function (card) {
+        var t = state.types.find(function (x) { return String(x.id) === card.getAttribute('data-wash-id') })
+        if (!t) return
+        var el = card.querySelector('.wash-price strong'), small = card.querySelector('.wash-price small')
+        var cta = card.querySelector('[data-wash-cta]')
+        var to = t.prices[s.id] || 0, from = Number(el.getAttribute('data-v')) || 0
+        small.textContent = s.name
+        el.setAttribute('data-v', to)
+        if (cta) cta.href = self.wa('Hola, quiero agendar un lavado *' + t.name + '* para ' + s.name + '. ¿Tienen disponibilidad?')
+        if (reduced || from === to) { el.textContent = self.price(to); return }
+        var t0 = performance.now()
+        ;(function step(now) {
+          var k = Math.min(1, (now - t0) / 420), e = 1 - Math.pow(1 - k, 3)
+          el.textContent = self.price(Math.round((from + (to - from) * e) / 100) * 100)
+          if (k < 1) requestAnimationFrame(step); else el.textContent = self.price(to)
+        })(t0)
+      })
+    }
+
+    if (seg) seg.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-size]'); if (!b) return
+      state.size = b.getAttribute('data-size')
+      seg.querySelectorAll('[data-size]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)) })
+      moveInd(); updatePrices()
+    })
+    grid.addEventListener('click', function (e) {
+      var m = e.target.closest('[data-wash-more]'); if (!m) return
+      state.expanded[m.getAttribute('data-wash-more')] = true
+      render()
+    })
+    window.addEventListener('resize', moveInd)
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInd)
+
+    try {
+      var res = await this.api('/api/wash-types')
+      state.types = res.data || []
+      state.sizes = res.sizes || []
+    } catch (e) {
+      state.types = []; state.sizes = []
+    }
+    state.size = state.sizes[0] && state.sizes[0].id
+    renderSeg(); render()
   },
 
   initNavbarScroll() {
@@ -604,6 +779,11 @@ const RAB = {
     var holder = document.createElement('div')
     holder.innerHTML = RAB.renderWhatsappFloat()
     document.body.appendChild(holder.firstChild)
+    // Barra inferior en celular: Agendar lavado + WhatsApp (reemplaza al botón flotante)
+    holder.innerHTML = '<div class="mobile-cta"><a class="btn-turbo" href="/index.html#lavado">Agendar lavado</a>' +
+      '<a class="btn-whatsapp" href="' + RAB.wa('Hola RAB, ¿me pueden ayudar? Escribo desde la web.') + '" target="_blank" rel="noopener" aria-label="WhatsApp">' + RAB.waSVG(18) + '</a></div>'
+    document.body.appendChild(holder.firstChild)
+    document.body.classList.add('has-mobile-cta')
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount)
   else mount()
